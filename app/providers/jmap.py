@@ -220,10 +220,145 @@ class JMAPProvider:
     async def search_by_sender(  # type: ignore[override]
         self, query: SenderQuery, mailboxes: list[str] | None = None
     ) -> AsyncIterator[MessageRef]:
-        raise NotImplementedError
-        yield  # pragma: no cover
+        if not query.from_emails:
+            return
+
+        async with aiohttp.ClientSession() as http:
+            if self._api_url is None:
+                await self._get_session(http)
+
+            from_filters = [{"from": a} for a in query.from_emails]
+            flt: dict = (
+                {"operator": "OR", "conditions": from_filters}
+                if len(from_filters) > 1
+                else from_filters[0]
+            )
+            if mailboxes:
+                flt = {
+                    "operator": "AND",
+                    "conditions": [
+                        flt,
+                        {
+                            "operator": "OR",
+                            "conditions": [
+                                {"inMailbox": mb} for mb in mailboxes
+                            ],
+                        },
+                    ],
+                }
+
+            payload = {
+                "using": _CAPS,
+                "methodCalls": [
+                    [
+                        "Email/query",
+                        {
+                            "accountId": self._account_id,
+                            "filter": flt,
+                            "limit": 5000,
+                        },
+                        "0",
+                    ],
+                    [
+                        "Email/get",
+                        {
+                            "accountId": self._account_id,
+                            "#ids": {
+                                "resultOf": "0",
+                                "name": "Email/query",
+                                "path": "/ids",
+                            },
+                            "properties": ["id", "mailboxIds"],
+                        },
+                        "1",
+                    ],
+                ],
+            }
+            async with http.post(
+                self._api_url, json=payload, headers=self._headers
+            ) as r:
+                r.raise_for_status()
+                data = await r.json()
+
+        for em in data["methodResponses"][-1][1].get("list", []):
+            for mb_id in (em.get("mailboxIds") or {}).keys():
+                yield MessageRef(provider_uid=em["id"], mailbox=mb_id)
 
     async def move_messages(
         self, refs: list[MessageRef], destination: SpecialFolder
     ) -> MoveResult:
-        raise NotImplementedError
+        if not refs:
+            return MoveResult(moved=0, failed=0, errors=[])
+
+        async with aiohttp.ClientSession() as http:
+            if self._api_url is None:
+                await self._get_session(http)
+
+            get_payload = {
+                "using": _CAPS,
+                "methodCalls": [
+                    [
+                        "Mailbox/query",
+                        {
+                            "accountId": self._account_id,
+                            "filter": {"role": destination.value},
+                        },
+                        "0",
+                    ]
+                ],
+            }
+            async with http.post(
+                self._api_url, json=get_payload, headers=self._headers
+            ) as r:
+                r.raise_for_status()
+                data = await r.json()
+            ids = data["methodResponses"][0][1].get("ids", [])
+            if not ids:
+                return MoveResult(
+                    moved=0,
+                    failed=len(refs),
+                    errors=[f"No mailbox with role={destination.value}"],
+                )
+            dst_id = ids[0]
+
+            by_id: dict[str, set[str]] = {}
+            for ref in refs:
+                by_id.setdefault(ref.provider_uid, set()).add(ref.mailbox)
+
+            update_obj: dict[str, dict] = {}
+            for email_id, src_ids in by_id.items():
+                patch: dict[str, object] = {f"mailboxIds/{dst_id}": True}
+                for src in src_ids:
+                    if src and src != dst_id:
+                        patch[f"mailboxIds/{src}"] = None
+                update_obj[email_id] = patch
+
+            set_payload = {
+                "using": _CAPS,
+                "methodCalls": [
+                    [
+                        "Email/set",
+                        {
+                            "accountId": self._account_id,
+                            "update": update_obj,
+                        },
+                        "0",
+                    ]
+                ],
+            }
+            async with http.post(
+                self._api_url, json=set_payload, headers=self._headers
+            ) as r:
+                r.raise_for_status()
+                result = await r.json()
+
+        set_resp = result["methodResponses"][0][1]
+        updated = set_resp.get("updated") or {}
+        not_updated = set_resp.get("notUpdated") or {}
+        errors = [
+            f"{eid}: {err.get('description', err)}" for eid, err in not_updated.items()
+        ]
+        moved = sum(len(by_id[eid]) for eid in updated.keys())
+        return MoveResult(
+            moved=moved, failed=len(refs) - moved, errors=errors
+        )
