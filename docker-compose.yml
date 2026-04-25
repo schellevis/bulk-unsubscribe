@@ -1,0 +1,35 @@
+services:
+  bulk-unsubscribe:
+    image: ghcr.io/schellevis/bulk-unsubscribe:latest
+    # Or build locally:
+    # build: .
+    container_name: bulk-unsubscribe
+    restart: unless-stopped
+    # Bind to localhost only by default; remove "127.0.0.1:" if you put a
+    # reverse proxy (with TLS + auth) in front and want to expose this on the
+    # host's external interface.
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment:
+      # Required. Generate once with:
+      #   python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
+      # then store it in a .env file next to this compose file.
+      BU_FERNET_KEY: ${BU_FERNET_KEY:?set BU_FERNET_KEY in .env}
+      BU_BIND_HOST: 0.0.0.0
+      BU_BIND_PORT: "8000"
+    volumes:
+      - bulk-unsubscribe-data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - >
+          python -c "import urllib.request,sys;
+          sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz',
+          timeout=2).status == 200 else 1)"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  bulk-unsubscribe-data:

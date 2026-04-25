@@ -53,6 +53,19 @@ docker run --rm -p 8000:8000 \
 
 The image runs as a non-root user, persists SQLite + caches in `/data`, and runs `alembic upgrade head` on startup.
 
+### docker compose
+
+A ready-to-use `docker-compose.yml` is included. Create a `.env` next to it
+with your generated key, then start the stack:
+
+```bash
+echo "BU_FERNET_KEY=$(python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())')" > .env
+docker compose up -d
+```
+
+By default it binds to `127.0.0.1:8000` only — drop the `127.0.0.1:` prefix in
+the `ports:` mapping once you've put a reverse proxy with TLS in front.
+
 ## Tests
 
 ```bash
