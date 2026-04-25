@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#2563eb" />
+    <meta name="description" content="Unsubscribe from newsletters in bulk" />
+    <title>Bulk Unsubscribe</title>
+    <link rel="stylesheet" href="/static/css/style.css" />
+  </head>
+  <body>
+    <!-- App header -->
+    <header class="app-header">
+      <span class="logo">✉️</span>
+      <h1>Bulk Unsubscribe</h1>
+    </header>
+
+    <!-- Main content -->
+    <main>
+
+      <!-- ── Senders view ───────────────────────────────────────────── -->
+      <section id="view-senders" class="view active">
+        <div class="section-header">
+          <span class="section-title">Newsletter Senders</span>
+        </div>
+
+        <div class="filter-bar">
+          <button class="filter-chip active" data-filter="active" onclick="setFilter('active')">Active</button>
+          <button class="filter-chip" data-filter="unsubscribed" onclick="setFilter('unsubscribed')">Unsubscribed</button>
+          <button class="filter-chip" data-filter="all" onclick="setFilter('all')">All</button>
+        </div>
+
+        <div id="sender-list"></div>
+      </section>
+
+      <!-- ── Accounts view ──────────────────────────────────────────── -->
+      <section id="view-accounts" class="view">
+        <div class="section-header">
+          <span class="section-title">My Accounts</span>
+        </div>
+
+        <div class="card" style="margin-bottom:1.25rem">
+          <div id="account-list"></div>
+        </div>
+
+        <!-- Add account card -->
+        <div class="card">
+          <div class="card-title">Add Account</div>
+
+          <div class="tabs">
+            <button class="tab active" data-tab="imap" onclick="selectTab('imap')">IMAP</button>
+            <button class="tab" data-tab="fastmail" onclick="selectTab('fastmail')">Fastmail</button>
+          </div>
+
+          <!-- IMAP form -->
+          <div id="form-imap" class="tab-content">
+            <form onsubmit="addIMAPAccount(event)">
+              <div class="form-group">
+                <label for="imap-name">Account name</label>
+                <input id="imap-name" name="name" type="text" placeholder="Work email" required />
+              </div>
+              <div class="form-group">
+                <label for="imap-email">Email address</label>
+                <input id="imap-email" name="email" type="email" placeholder="you@example.com" required />
+              </div>
+              <div class="form-group">
+                <label for="imap-host">IMAP server</label>
+                <input id="imap-host" name="imap_host" type="text" placeholder="imap.example.com" required />
+              </div>
+              <div class="form-group">
+                <label for="imap-port">Port</label>
+                <input id="imap-port" name="imap_port" type="number" value="993" required />
+              </div>
+              <div class="form-group">
+                <label for="imap-username">Username</label>
+                <input id="imap-username" name="imap_username" type="text" placeholder="you@example.com" required />
+              </div>
+              <div class="form-group">
+                <label for="imap-password">Password / App password</label>
+                <input id="imap-password" name="password" type="password" autocomplete="current-password" required />
+              </div>
+              <button type="submit" class="btn btn-primary">Connect &amp; Save</button>
+            </form>
+          </div>
+
+          <!-- Fastmail form -->
+          <div id="form-fastmail" class="tab-content hidden">
+            <form onsubmit="addFastmailAccount(event)">
+              <div class="form-group">
+                <label for="fm-name">Account name</label>
+                <input id="fm-name" name="name" type="text" placeholder="Fastmail" required />
+              </div>
+              <div class="form-group">
+                <label for="fm-email">Email address</label>
+                <input id="fm-email" name="email" type="email" placeholder="you@fastmail.com" required />
+              </div>
+              <div class="form-group">
+                <label for="fm-token">API token</label>
+                <input id="fm-token" name="api_token" type="password" placeholder="fmu1-…" required />
+                <small style="color:var(--color-muted);font-size:0.75rem">
+                  Generate a token at <a href="https://app.fastmail.com/settings/security/tokens" target="_blank" rel="noopener">Fastmail Settings → Security → API tokens</a>
+                </small>
+              </div>
+              <button type="submit" class="btn btn-primary">Connect &amp; Save</button>
+            </form>
+          </div>
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Bottom navigation -->
+    <nav class="bottom-nav">
+      <button class="nav-btn active" data-view="senders" onclick="navigate('senders')">
+        <span class="icon">📋</span>
+        <span>Senders</span>
+      </button>
+      <button class="nav-btn" data-view="accounts" onclick="navigate('accounts')">
+        <span class="icon">⚙️</span>
+        <span>Accounts</span>
+      </button>
+    </nav>
+
+    <!-- Toast container -->
+    <div id="toast-container"></div>
+
+    <script src="/static/js/app.js"></script>
+  </body>
+</html>
