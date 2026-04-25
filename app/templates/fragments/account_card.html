@@ -1,0 +1,23 @@
+<div class="card" id="account-{{ account.id }}">
+  <div class="flex between">
+    <div>
+      <strong>{{ account.name }}</strong>
+      <div class="muted">{{ account.email }} · {{ account.provider.value }}</div>
+      {% if account.last_full_scan_at %}
+      <div class="muted">Last scan: {{ account.last_full_scan_at.strftime("%Y-%m-%d %H:%M") }}</div>
+      {% else %}
+      <div class="muted">Never scanned</div>
+      {% endif %}
+    </div>
+    <div class="flex">
+      <button hx-post="/accounts/{{ account.id }}/scan"
+              hx-target="#scan-status-{{ account.id }}"
+              hx-swap="innerHTML">Scan</button>
+      <form method="post" action="/accounts/{{ account.id }}/delete">
+        <button type="submit" class="secondary"
+                onclick="return confirm('Delete account {{ account.email }}?')">Delete</button>
+      </form>
+    </div>
+  </div>
+  <div id="scan-status-{{ account.id }}"></div>
+</div>

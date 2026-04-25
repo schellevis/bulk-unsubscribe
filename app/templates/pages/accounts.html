@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}Accounts — Bulk Unsubscribe{% endblock %}
+
+{% block content %}
+<h2>Accounts</h2>
+
+{% if not accounts %}
+<p class="muted">No accounts yet. Add one below.</p>
+{% else %}
+{% for account in accounts %}
+  {% include "fragments/account_card.html" %}
+{% endfor %}
+{% endif %}
+
+<h3>Add IMAP account</h3>
+<form method="post" action="/accounts/imap" class="card">
+  <div class="field"><label>Display name</label><input name="name" required></div>
+  <div class="field"><label>Email</label><input name="email" type="email" required></div>
+  <div class="field"><label>IMAP host</label><input name="imap_host" required></div>
+  <div class="field"><label>IMAP port</label><input name="imap_port" type="number" value="993"></div>
+  <div class="field"><label>IMAP username</label><input name="imap_username" required></div>
+  <div class="field"><label>Password / app-password</label><input name="password" type="password" required></div>
+  <button type="submit">Add IMAP account</button>
+</form>
+
+<h3>Add Fastmail (JMAP) account</h3>
+<form method="post" action="/accounts/jmap" class="card">
+  <div class="field"><label>Display name</label><input name="name" required></div>
+  <div class="field"><label>Email</label><input name="email" type="email" required></div>
+  <div class="field"><label>API token</label><input name="api_token" type="password" required></div>
+  <button type="submit">Add Fastmail account</button>
+</form>
+{% endblock %}

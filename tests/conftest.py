@@ -2,15 +2,18 @@ from collections.abc import Generator
 from pathlib import Path
 
 import pytest
+from cryptography.fernet import Fernet
 from sqlalchemy.orm import Session
 
 from app.config import Settings, get_settings
 from app.db import Base, get_engine, get_session_factory
 
+_TEST_FERNET_KEY = Fernet.generate_key().decode()
+
 
 @pytest.fixture(autouse=True)
 def _isolate_settings(monkeypatch, tmp_path: Path) -> None:
-    monkeypatch.setenv("BU_FERNET_KEY", "x" * 44 + "=")
+    monkeypatch.setenv("BU_FERNET_KEY", _TEST_FERNET_KEY)
     monkeypatch.setenv("BU_DATA_DIR", str(tmp_path))
     get_settings.cache_clear()
     get_engine.cache_clear()
