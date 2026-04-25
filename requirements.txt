@@ -1,0 +1,8 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+sqlalchemy==2.0.40
+pydantic[email]==2.11.3
+pydantic-settings==2.9.1
+python-multipart==0.0.20
+aiohttp==3.11.18
+cryptography==44.0.3
