@@ -7,13 +7,11 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
-from app.models.account import Account, ProviderType
+from app.models.account import Account
 from app.models.message import Message
 from app.models.sender import Sender, SenderStatus
 from app.providers.base import MessageRef
-from app.providers.imap import IMAPProvider
-from app.providers.jmap import JMAPProvider
-from app.services.crypto import CredentialCipher
+from app.services.provider_factory import build_provider as _provider_for_account
 
 router = APIRouter(tags=["senders"])
 
@@ -36,19 +34,6 @@ def _templates():
     from app.main import templates
 
     return templates
-
-
-def _provider_for_account(account: Account):
-    cipher = CredentialCipher.from_settings()
-    secret = cipher.decrypt(account.credential_encrypted)
-    if account.provider == ProviderType.imap:
-        return IMAPProvider(
-            account.imap_host or "",
-            account.imap_port or 993,
-            account.imap_username or "",
-            secret,
-        )
-    return JMAPProvider(api_token=secret)
 
 
 @router.get("/", response_class=HTMLResponse)

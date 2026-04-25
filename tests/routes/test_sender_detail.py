@@ -58,11 +58,11 @@ def test_message_preview_fragment_returns_snippet(db_session):
     async def fake_snippet(self, ref):
         return "Hello world preview"
 
-    # Patch decryption so the cipher doesn't fail with our placeholder credential.
+    # Patch the provider factory to bypass credential decryption.
     with TestClient(app) as client, patch(
         "app.providers.jmap.JMAPProvider.fetch_snippet", new=fake_snippet
     ), patch(
-        "app.routes.senders.CredentialCipher.from_settings"
+        "app.services.provider_factory.CredentialCipher.from_settings"
     ) as cipher_factory:
         cipher_factory.return_value.decrypt.return_value = "fake-token"
         _, sender = _seed(db_session)

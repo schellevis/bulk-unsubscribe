@@ -1,0 +1,12 @@
+<div class="card">
+  <strong>{{ count }}</strong> messages from
+  <strong>{{ sender.display_name or sender.from_email }}</strong>
+  will be moved to <strong>{{ destination.value }}</strong>.
+  <form hx-post="/senders/{{ sender.id }}/bulk?destination={{ destination.value }}"
+        hx-target="#bulk-status-{{ sender.id }}" hx-swap="innerHTML"
+        style="margin-top:0.5rem;">
+    <button type="submit">Yes, move them</button>
+    <button type="button" class="secondary"
+            onclick="this.closest('.card').remove()">Cancel</button>
+  </form>
+</div>
