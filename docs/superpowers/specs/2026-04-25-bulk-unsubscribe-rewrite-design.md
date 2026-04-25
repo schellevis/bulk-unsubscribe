@@ -22,8 +22,9 @@ In scope:
 - Per-sender preview (lazy-loaded subjects/snippets/full body in sandbox iframe).
 - Bulk actions on **all** mail from a sender across all folders: move to
   Trash (recoverable), or move to Archive/mark read.
-- Whitelist per account, per sender or per domain, with a separate view to
-  manage them.
+- Whitelist per account, scoped to sender, domain, **or mailbox/label**
+  (e.g. "ignore everything in Promotions or under the `Newsletters/Subscribed`
+  label"), with a separate view to manage them.
 - Top-senders main view filtered by selectable time period.
 
 Out of scope (YAGNI for v1):
@@ -139,6 +140,13 @@ Action                          # append-only audit log of mutations
   affected_count               # for bulk
   detail                       # response codes, errors
   created_at
+
+WhitelistRule                   # rule-based whitelist
+  id, account_id (FK)
+  kind: sender | domain | mailbox
+  value: string                # email, domain, or mailbox/label name
+  created_at
+  UNIQUE(account_id, kind, value)
 ```
 
 **Notes:**
@@ -267,15 +275,41 @@ Per sender (or domain group), user can:
 
 ## 7. Whitelist
 
-- A sender is whitelisted by setting `Sender.status = whitelisted` and
-  `Sender.whitelist_scope = sender | domain`.
-- Domain whitelist (`scope = domain`) suppresses every sender whose
-  `from_domain` matches, including future ones.
-- Default view filters out `whitelisted` and `unsubscribed`/`trashed`.
-- A separate "Whitelist" tab lists everything that is whitelisted, with
-  an "unwhitelist" button.
-- Whitelist is per account: each `Sender` row is per account, so domain
-  whitelisting also stays scoped to the account that owns the rule.
+Whitelisting is rule-based: an account has a list of `WhitelistRule` rows,
+each with a `kind` and `value`:
+
+- `kind = sender`, `value = "news@example.com"` — exact From-address match
+  (also matches if the address appears as a `SenderAlias`).
+- `kind = domain`, `value = "example.com"` — any From-address whose
+  domain matches.
+- `kind = mailbox`, `value = "Promotions"` — any message currently in
+  that mailbox/label is excluded. Mailbox names are provider-native
+  strings: IMAP folder paths, JMAP mailbox names. Sub-folder matching is
+  prefix-based with the provider's hierarchy separator (e.g.
+  `Newsletters/` whitelists everything under `Newsletters`).
+
+**Effect on scan:** the scan job consults the whitelist before persisting
+each `ScannedMessage`. Mailbox-whitelisted messages are skipped entirely
+(not stored, not counted). Sender/domain whitelist rules do not skip
+storage — they mark the resulting `Sender` row with
+`status = whitelisted` so the message still contributes to history /
+analytics if we ever want them.
+
+**Effect on default view:** filters out senders with
+`status in (whitelisted, unsubscribed, trashed)`.
+
+**Whitelist view:** a separate tab lists every `WhitelistRule` and lets
+the user remove them, plus a "potentially-affected senders" count for
+each rule.
+
+**Per-account scoping:** all rules belong to one `Account`; rules do not
+cross accounts.
+
+**Sender.status redundancy:** `Sender.status = whitelisted` is a
+denormalization for fast filtering — the source of truth is the
+`WhitelistRule` table. When a rule is added/removed, a small
+`recompute_whitelist_status(account_id)` routine updates affected
+`Sender.status` rows.
 
 ## 8. Top-senders view
 
