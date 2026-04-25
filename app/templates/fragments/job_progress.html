@@ -1,0 +1,13 @@
+{% from "_macros.html" import progress_bar %}
+{% set terminal = job.status.value in ("success", "failed", "cancelled") %}
+
+<div id="job-{{ job.id }}"
+     {% if not terminal %}hx-get="/jobs/{{ job.id }}/fragment"
+       hx-trigger="every 2s"
+       hx-swap="outerHTML"{% endif %}>
+  <div class="muted">Job #{{ job.id }} — {{ job.type.value }} — {{ job.status.value }}</div>
+  {{ progress_bar(job.progress_done, job.progress_total) }}
+  {% if job.status.value == "failed" %}
+  <div style="color: var(--danger);">Error: {{ job.error or "unknown" }}</div>
+  {% endif %}
+</div>
