@@ -1,90 +1,51 @@
-# Bulk Unsubscribe
+# Bulk Unsubscribe (v0.2 — foundations)
 
-A mobile-first web tool that connects to your mail provider and helps you unsubscribe from newsletters in bulk.
+Mobile-first webapp that connects to your mail provider, scans for newsletters, and helps you decide what to do about them. **This release** lets you connect accounts, scan, and browse top senders with previews. Unsubscribe execution and bulk inbox actions land in the next release.
 
-## Features
+## Features (v0.2)
 
-- 📧 **IMAP support** – connect to any IMAP server (Gmail, Outlook, self-hosted, etc.)
-- ⚡ **Fastmail JMAP API** – native Fastmail integration via API token
-- 📱 **Mobile-first UI** – clean, responsive interface that works great on phones
-- 🗄️ **SQLite database** – lightweight local storage, no external server needed
-- 🔍 **Smart scanning** – detects newsletters via the `List-Unsubscribe` email header
-- 🚫 **One-tap unsubscribe** – follow HTTP unsubscribe links automatically
+- IMAP and Fastmail (JMAP) accounts.
+- Header-only scan that detects messages with `List-Unsubscribe`.
+- Top-senders view per account, filtered by 7d / 30d / 90d / all-time.
+- Toggle between sender-grouping and domain-grouping.
+- Sender detail with up to 50 recent messages and lazy snippet preview.
+- Async scan jobs with live progress (polled by HTMX every 2s).
 
-## Quick Start
-
-### Prerequisites
-
-- Python 3.11+
-
-### Installation
+## Setup
 
 ```bash
-# 1. Clone the repository
-git clone https://github.com/schellevis/bulk-unsubscribe.git
-cd bulk-unsubscribe
+# Generate a Fernet key first
+python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
+export BU_FERNET_KEY=<paste-output>
 
-# 2. Create a virtual environment
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
+# Optional overrides
+export BU_DATA_DIR=./var
+export BU_BIND_HOST=127.0.0.1
+export BU_BIND_PORT=8000
 
-# 3. Install dependencies
-pip install -r requirements.txt
-
-# 4. Start the server
-uvicorn app.main:app --host 0.0.0.0 --port 8000
+uv sync --all-groups
+uv run alembic upgrade head
+uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open your browser at [http://localhost:8000](http://localhost:8000).
+Open <http://127.0.0.1:8000>.
 
-## Usage
+## Tests
 
-1. **Add an account** (⚙️ Accounts tab)
-   - For IMAP: enter your server details and password / app-password
-   - For Fastmail: generate an API token at *Settings → Security → API tokens*
-2. **Scan your inbox** by clicking the 🔍 icon next to an account
-3. **Review senders** in the 📋 Senders tab – newsletters are grouped by sender
-4. **Unsubscribe** with one tap – the app follows the `List-Unsubscribe` link automatically
-
-## Architecture
-
-```
-bulk-unsubscribe/
-├── app/
-│   ├── main.py                 # FastAPI application
-│   ├── database.py             # SQLite / SQLAlchemy setup
-│   ├── models.py               # ORM models (Account, Sender, UnsubscribeAttempt)
-│   ├── crypto.py               # Credential encryption (Fernet)
-│   ├── routers/
-│   │   ├── accounts.py         # POST /api/accounts/imap|fastmail
-│   │   ├── senders.py          # GET/POST /api/senders
-│   │   └── scan.py             # POST /api/scan/{account_id}
-│   └── services/
-│       ├── imap_service.py     # imaplib-based IMAP scanner
-│       └── fastmail_service.py # JMAP-based Fastmail scanner
-├── static/
-│   ├── index.html              # Single-page app shell
-│   ├── css/style.css           # Mobile-first styles
-│   └── js/app.js               # Vanilla JS frontend
-└── requirements.txt
+```bash
+uv run pytest -v
 ```
 
-## Security Notes
+## Configuration
 
-- Credentials are encrypted at rest using **Fernet** (AES-128-CBC).
-- Set the `CREDENTIAL_SECRET` environment variable (min. 32 characters) before deploying; the default value is for development only.
-- The API has no authentication layer yet – run it on localhost or behind a reverse proxy with auth.
+| Env var | Required | Default | Notes |
+|---------|----------|---------|-------|
+| `BU_FERNET_KEY` | yes | — | Output of `Fernet.generate_key()` |
+| `BU_DATA_DIR`   | no  | `./var` | SQLite DB + (future) body cache |
+| `BU_DATABASE_URL` | no | `sqlite:///{data_dir}/bulk-unsubscribe.db` | |
+| `BU_BIND_HOST`  | no  | `127.0.0.1` | |
+| `BU_BIND_PORT`  | no  | `8000` | |
 
-## API Reference
+## Roadmap
 
-The interactive API docs are available at [http://localhost:8000/docs](http://localhost:8000/docs).
-
-| Method | Path | Description |
-|--------|------|-------------|
-| `GET` | `/api/accounts` | List accounts |
-| `POST` | `/api/accounts/imap` | Add IMAP account |
-| `POST` | `/api/accounts/fastmail` | Add Fastmail account |
-| `DELETE` | `/api/accounts/{id}` | Remove account |
-| `GET` | `/api/senders` | List newsletter senders |
-| `POST` | `/api/senders/{id}/unsubscribe` | Unsubscribe from a sender |
-| `POST` | `/api/scan/{account_id}` | Scan inbox for newsletters |
+The next plan ("Actions & deployment") covers RFC 8058 one-click unsubscribe with confirmation, bulk archive/trash across all folders, whitelist (sender + domain + mailbox/label), single-password auth gate, Dockerfile, and a GitHub Actions workflow that publishes images to GHCR on every push to `main`.
