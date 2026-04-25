@@ -17,6 +17,7 @@ router = APIRouter(tags=["senders"])
 
 Period = Literal["7d", "30d", "90d", "all"]
 Grouping = Literal["sender", "domain"]
+ShowMode = Literal["active", "whitelisted"]
 
 
 def _period_floor(period: Period) -> datetime | None:
@@ -42,6 +43,7 @@ def index(
     account_id: int | None = Query(default=None),
     period: Period = Query(default="30d"),
     group: Grouping = Query(default="sender"),
+    show: ShowMode = Query(default="active"),
     db: Session = Depends(get_db),
 ) -> HTMLResponse:
     accounts = db.execute(select(Account).order_by(Account.created_at)).scalars().all()
@@ -52,7 +54,7 @@ def index(
     rows: list[dict] = []
     if selected_account is not None:
         floor = _period_floor(period)
-        rows = _query_rows(db, selected_account.id, floor, group)
+        rows = _query_rows(db, selected_account.id, floor, group, show)
 
     context = {
         "accounts": accounts,
@@ -60,16 +62,25 @@ def index(
         "rows": rows,
         "period": period,
         "group": group,
+        "show": show,
     }
     return _templates().TemplateResponse(request, "pages/senders.html", context)
 
 
 def _query_rows(
-    db: Session, account_id: int, floor: datetime | None, group: Grouping
+    db: Session,
+    account_id: int,
+    floor: datetime | None,
+    group: Grouping,
+    show: ShowMode = "active",
 ) -> list[dict]:
     msg_filter = [Message.account_id == account_id]
     if floor is not None:
         msg_filter.append(Message.received_at >= floor)
+
+    status_filter = (
+        SenderStatus.whitelisted if show == "whitelisted" else SenderStatus.active
+    )
 
     if group == "sender":
         stmt = (
@@ -84,7 +95,7 @@ def _query_rows(
             )
             .join(Message, Message.sender_id == Sender.id)
             .where(Sender.account_id == account_id)
-            .where(Sender.status == SenderStatus.active)
+            .where(Sender.status == status_filter)
             .where(*msg_filter)
             .group_by(Sender.id)
             .order_by(func.count(Message.id).desc())
@@ -100,7 +111,7 @@ def _query_rows(
         )
         .join(Message, Message.sender_id == Sender.id)
         .where(Sender.account_id == account_id)
-        .where(Sender.status == SenderStatus.active)
+        .where(Sender.status == status_filter)
         .where(*msg_filter)
         .group_by(Sender.from_domain)
         .order_by(func.count(Message.id).desc())

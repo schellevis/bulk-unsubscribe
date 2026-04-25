@@ -21,6 +21,10 @@
       <option value="sender" {% if group == "sender" %}selected{% endif %}>Per sender</option>
       <option value="domain" {% if group == "domain" %}selected{% endif %}>Per domain</option>
     </select>
+    <select name="show">
+      <option value="active" {% if show == "active" %}selected{% endif %}>Active</option>
+      <option value="whitelisted" {% if show == "whitelisted" %}selected{% endif %}>Whitelisted</option>
+    </select>
     <button type="submit">Apply</button>
   </div>
 </form>
