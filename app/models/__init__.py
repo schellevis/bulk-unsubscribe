@@ -2,10 +2,19 @@
 
 from app.db import Base
 from app.models.account import Account, ProviderType
+from app.models.sender import Sender, SenderAlias, SenderStatus, WhitelistScope
 
 
 def register_all() -> type[Base]:
     return Base
 
 
-__all__ = ["Account", "ProviderType", "register_all"]
+__all__ = [
+    "Account",
+    "ProviderType",
+    "Sender",
+    "SenderAlias",
+    "SenderStatus",
+    "WhitelistScope",
+    "register_all",
+]
