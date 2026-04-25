@@ -1,34 +1,59 @@
-# Bulk Unsubscribe (v0.2 — foundations)
+# Bulk Unsubscribe
 
-Mobile-first webapp that connects to your mail provider, scans for newsletters, and helps you decide what to do about them. **This release** lets you connect accounts, scan, and browse top senders with previews. Unsubscribe execution and bulk inbox actions land in the next release.
+Mobile-first, self-hosted webapp that connects to your mail provider, scans for newsletters, and helps you bulk-unsubscribe and clean up your inbox.
 
-## Features (v0.2)
+## Features
 
-- IMAP and Fastmail (JMAP) accounts.
-- Header-only scan that detects messages with `List-Unsubscribe`.
-- Top-senders view per account, filtered by 7d / 30d / 90d / all-time.
-- Toggle between sender-grouping and domain-grouping.
-- Sender detail with up to 50 recent messages and lazy snippet preview.
-- Async scan jobs with live progress (polled by HTMX every 2s).
+- **Connect IMAP or Fastmail (JMAP) accounts** — multiple per install.
+- **Scan** the inbox for messages with `List-Unsubscribe` headers; group senders by `List-ID` (with fallback to From-address) and show top senders per period (7d / 30d / 90d / all-time).
+- **Sender detail** with up to 50 recent messages and lazy snippet preview.
+- **Unsubscribe** with explicit URL/method confirmation:
+  - 🟢 **One-click POST** (RFC 8058) when supported.
+  - HTTP link (opens in a new tab; you confirm in the browser).
+  - mailto link.
+- **Bulk inbox actions** per sender, across all folders:
+  - Move to **Archive**.
+  - Move to **Trash** (recoverable via your mail client).
+- **Whitelist** rules per account, three scopes:
+  - `sender` — exact From-address.
+  - `domain` — every sender on that domain.
+  - `mailbox` — every message in that folder/label (sub-folders match by prefix).
+- **Single-password auth gate** (optional) with session cookie.
+- **Async jobs** with live HTMX-polled progress.
+- **Docker image** published to GHCR on every push to `main`.
 
-## Setup
+## Local setup
 
 ```bash
-# Generate a Fernet key first
+# 1. Generate a Fernet key
 python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())'
 export BU_FERNET_KEY=<paste-output>
 
-# Optional overrides
-export BU_DATA_DIR=./var
+# Optional
+export BU_AUTH_PASSWORD=hunter2     # enable login gate
 export BU_BIND_HOST=127.0.0.1
 export BU_BIND_PORT=8000
+export BU_DATA_DIR=./var
 
+# 2. Install + migrate + run
 uv sync --all-groups
 uv run alembic upgrade head
 uv run uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
 Open <http://127.0.0.1:8000>.
+
+## Docker
+
+```bash
+docker run --rm -p 8000:8000 \
+  -e BU_FERNET_KEY=<fernet-key> \
+  -e BU_AUTH_PASSWORD=hunter2 \
+  -v bulk-unsubscribe-data:/data \
+  ghcr.io/<owner>/bulk-unsubscribe:latest
+```
+
+The image runs as a non-root user, persists SQLite + caches in `/data`, and runs `alembic upgrade head` on startup.
 
 ## Tests
 
@@ -40,12 +65,28 @@ uv run pytest -v
 
 | Env var | Required | Default | Notes |
 |---------|----------|---------|-------|
-| `BU_FERNET_KEY` | yes | — | Output of `Fernet.generate_key()` |
-| `BU_DATA_DIR`   | no  | `./var` | SQLite DB + (future) body cache |
+| `BU_FERNET_KEY` | yes | — | Output of `Fernet.generate_key()`. App refuses to start without a valid key. |
+| `BU_AUTH_PASSWORD` | no | — | If set, every page (except `/login`, `/healthz`, `/static/*`) requires login. |
+| `BU_DATA_DIR` | no | `./var` (or `/data` in Docker) | SQLite DB lives here. |
 | `BU_DATABASE_URL` | no | `sqlite:///{data_dir}/bulk-unsubscribe.db` | |
-| `BU_BIND_HOST`  | no  | `127.0.0.1` | |
-| `BU_BIND_PORT`  | no  | `8000` | |
+| `BU_BIND_HOST` | no | `127.0.0.1` | Bind to `0.0.0.0` only behind a reverse proxy. |
+| `BU_BIND_PORT` | no | `8000` | |
 
-## Roadmap
+## Security notes
 
-The next plan ("Actions & deployment") covers RFC 8058 one-click unsubscribe with confirmation, bulk archive/trash across all folders, whitelist (sender + domain + mailbox/label), single-password auth gate, Dockerfile, and a GitHub Actions workflow that publishes images to GHCR on every push to `main`.
+- The app binds `127.0.0.1` by default. Run it on localhost or behind a reverse proxy with TLS.
+- Credentials (IMAP password / JMAP token) are stored Fernet-encrypted; the key only lives in the env var.
+- The auth gate is single-password by design — this is a single-user tool.
+- Outbound HTTP for one-click unsubscribe goes to whatever URL the mail provider gave us; the user explicitly confirms the URL in the modal before we POST. There's no SSRF protection beyond that — appropriate for a single-user tool, not a multi-tenant service.
+
+## CI / GHCR
+
+`.github/workflows/docker.yml` builds and pushes a multi-arch (amd64 + arm64) image to `ghcr.io/<owner>/bulk-unsubscribe` on every push to `main`, tagged `latest` and `sha-<short>`.
+
+## Architecture
+
+- FastAPI + Jinja2 + HTMX + Alpine.js (no build step).
+- SQLAlchemy 2.x + Alembic + SQLite.
+- `MailProvider` Protocol with IMAP (`imaplib` wrapped in `asyncio.to_thread`) and JMAP (`aiohttp`) implementations.
+- In-process async job runner with crash recovery — no external worker required.
+- See `docs/superpowers/specs/2026-04-25-bulk-unsubscribe-rewrite-design.md` for the full design.
