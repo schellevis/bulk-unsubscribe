@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.jobs.runner import JobRunner
 from app.jobs.scan import build_scan_work
@@ -32,7 +32,7 @@ async def test_scan_job_creates_senders_and_messages(db_session, tmp_path):
                 from_email="news@example.com",
                 display_name="News",
                 subject="Hi",
-                received_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+                received_at=datetime(2026, 4, 1, tzinfo=UTC),
                 list_id="<news.example.com>",
                 list_unsubscribe="<https://example.com/u/1>",
                 list_unsubscribe_post="List-Unsubscribe=One-Click",
@@ -45,7 +45,7 @@ async def test_scan_job_creates_senders_and_messages(db_session, tmp_path):
                 from_email="news2@example.com",
                 display_name="News2",
                 subject="Hi2",
-                received_at=datetime(2026, 4, 2, tzinfo=timezone.utc),
+                received_at=datetime(2026, 4, 2, tzinfo=UTC),
                 list_id="<news.example.com>",
                 list_unsubscribe="<https://example.com/u/2>",
                 list_unsubscribe_post=None,
@@ -99,7 +99,7 @@ async def test_scan_job_is_idempotent_on_rerun(db_session, tmp_path):
         from_email="news@example.com",
         display_name="News",
         subject="Hi",
-        received_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+        received_at=datetime(2026, 4, 1, tzinfo=UTC),
         list_id="<news.example.com>",
         list_unsubscribe="<https://example.com/u/1>",
         list_unsubscribe_post=None,

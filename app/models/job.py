@@ -1,20 +1,20 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import (
     DateTime,
-    Enum as SAEnum,
     ForeignKey,
     Integer,
     Text,
     func,
 )
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
 
 
-class JobType(str, Enum):
+class JobType(StrEnum):
     scan = "scan"
     bulk_archive = "bulk_archive"
     bulk_trash = "bulk_trash"
@@ -22,7 +22,7 @@ class JobType(str, Enum):
     unsubscribe = "unsubscribe"
 
 
-class JobStatus(str, Enum):
+class JobStatus(StrEnum):
     queued = "queued"
     running = "running"
     success = "success"

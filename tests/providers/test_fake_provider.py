@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -16,7 +16,7 @@ def provider() -> FakeMailProvider:
                 from_email="news@example.com",
                 display_name="News",
                 subject="Hello",
-                received_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+                received_at=datetime(2026, 4, 1, tzinfo=UTC),
                 list_id="<news.example.com>",
                 list_unsubscribe="<https://example.com/u/1>, <mailto:u@example.com>",
                 list_unsubscribe_post="List-Unsubscribe=One-Click",
@@ -29,7 +29,7 @@ def provider() -> FakeMailProvider:
                 from_email="other@example.org",
                 display_name="Other",
                 subject="Plain",
-                received_at=datetime(2026, 3, 15, tzinfo=timezone.utc),
+                received_at=datetime(2026, 3, 15, tzinfo=UTC),
                 list_id=None,
                 list_unsubscribe=None,
                 list_unsubscribe_post=None,

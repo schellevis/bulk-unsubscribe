@@ -18,7 +18,7 @@ Mobile-first, self-hosted webapp that connects to your mail provider, scans for 
   - `sender` — exact From-address.
   - `domain` — every sender on that domain.
   - `mailbox` — every message in that folder/label (sub-folders match by prefix).
-- **Single-password auth gate** (optional) with session cookie.
+- Same-origin protection for browser-triggered POST requests.
 - **Async jobs** with live HTMX-polled progress.
 - **Docker image** published to GHCR on every push to `main`.
 
@@ -30,7 +30,6 @@ python -c 'from cryptography.fernet import Fernet; print(Fernet.generate_key().d
 export BU_FERNET_KEY=<paste-output>
 
 # Optional
-export BU_AUTH_PASSWORD=hunter2     # enable login gate
 export BU_BIND_HOST=127.0.0.1
 export BU_BIND_PORT=8000
 export BU_DATA_DIR=./var
@@ -48,7 +47,6 @@ Open <http://127.0.0.1:8000>.
 ```bash
 docker run --rm -p 8000:8000 \
   -e BU_FERNET_KEY=<fernet-key> \
-  -e BU_AUTH_PASSWORD=hunter2 \
   -v bulk-unsubscribe-data:/data \
   ghcr.io/<owner>/bulk-unsubscribe:latest
 ```
@@ -66,7 +64,6 @@ uv run pytest -v
 | Env var | Required | Default | Notes |
 |---------|----------|---------|-------|
 | `BU_FERNET_KEY` | yes | — | Output of `Fernet.generate_key()`. App refuses to start without a valid key. |
-| `BU_AUTH_PASSWORD` | no | — | If set, every page (except `/login`, `/healthz`, `/static/*`) requires login. |
 | `BU_DATA_DIR` | no | `./var` (or `/data` in Docker) | SQLite DB lives here. |
 | `BU_DATABASE_URL` | no | `sqlite:///{data_dir}/bulk-unsubscribe.db` | |
 | `BU_BIND_HOST` | no | `127.0.0.1` | Bind to `0.0.0.0` only behind a reverse proxy. |
@@ -75,9 +72,10 @@ uv run pytest -v
 ## Security notes
 
 - The app binds `127.0.0.1` by default. Run it on localhost or behind a reverse proxy with TLS.
+- Authentication is intentionally out of scope for this app. It has no built-in login gate, users, or session cookies. Put it behind a reverse proxy if you expose it beyond localhost.
+- Browser-origin protection rejects unsafe-method requests when `Origin` or `Referer` points to another origin. Non-browser clients without those headers are still allowed.
 - Credentials (IMAP password / JMAP token) are stored Fernet-encrypted; the key only lives in the env var.
-- The auth gate is single-password by design — this is a single-user tool.
-- Outbound HTTP for one-click unsubscribe goes to whatever URL the mail provider gave us; the user explicitly confirms the URL in the modal before we POST. There's no SSRF protection beyond that — appropriate for a single-user tool, not a multi-tenant service.
+- One-click unsubscribe only posts to HTTPS URLs whose host resolves to public IP addresses, rejects credentials in URLs, and validates every redirect target before following it.
 
 ## CI / GHCR
 

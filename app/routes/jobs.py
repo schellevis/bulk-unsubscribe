@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy.orm import Session
@@ -12,6 +14,7 @@ from app.providers.jmap import JMAPProvider
 from app.services.crypto import CredentialCipher
 
 router = APIRouter(tags=["jobs"])
+DbSession = Annotated[Session, Depends(get_db)]
 
 
 def _templates():
@@ -57,7 +60,7 @@ def _dispatch_scan_job(job_id: int, account: Account) -> None:
 
 @router.post("/accounts/{account_id}/scan", response_class=HTMLResponse)
 def start_scan(
-    account_id: int, request: Request, db: Session = Depends(get_db)
+    account_id: int, request: Request, db: DbSession
 ) -> HTMLResponse:
     account = db.get(Account, account_id)
     if account is None:
@@ -79,7 +82,7 @@ def start_scan(
 
 @router.get("/jobs/{job_id}/fragment", response_class=HTMLResponse)
 def job_fragment(
-    job_id: int, request: Request, db: Session = Depends(get_db)
+    job_id: int, request: Request, db: DbSession
 ) -> HTMLResponse:
     job = db.get(Job, job_id)
     if job is None:

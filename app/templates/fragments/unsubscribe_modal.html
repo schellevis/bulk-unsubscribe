@@ -3,7 +3,7 @@
   {% if methods.one_click %}
   <form hx-post="/senders/{{ sender.id }}/unsubscribe?method=one_click"
         hx-target="#unsub-status-{{ sender.id }}" hx-swap="innerHTML"
-        onsubmit="return confirm('POST one-click to {{ sender.unsubscribe_http }}?');">
+        onsubmit="return confirm({{ ("POST one-click to " ~ sender.unsubscribe_http ~ "?")|tojson|forceescape }});">
     <button type="submit">🟢 One-click POST (recommended)</button>
     <div class="muted">{{ sender.unsubscribe_http }}</div>
   </form>
@@ -11,7 +11,7 @@
   {% if methods.http_url %}
   <form hx-post="/senders/{{ sender.id }}/unsubscribe?method=http"
         hx-target="#unsub-status-{{ sender.id }}" hx-swap="innerHTML"
-        onsubmit="return confirm('Open {{ methods.http_url }} in a new tab?');"
+        onsubmit="return confirm({{ ("Open " ~ methods.http_url ~ " in a new tab?")|tojson|forceescape }});"
         style="margin-top:0.5rem;">
     <button type="submit" class="secondary">Open HTTP link</button>
     <div class="muted">{{ methods.http_url }}</div>

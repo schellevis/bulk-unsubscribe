@@ -1,5 +1,5 @@
 from collections.abc import AsyncIterator
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import aiohttp
 
@@ -51,7 +51,7 @@ class JMAPProvider:
             async with aiohttp.ClientSession() as http:
                 await self._get_session(http)
             return True
-        except Exception:  # noqa: BLE001
+        except Exception:
             return False
 
     async def list_mailboxes(self) -> list[Mailbox]:
@@ -174,7 +174,7 @@ class JMAPProvider:
             try:
                 received = datetime.fromisoformat(
                     received_raw.replace("Z", "+00:00")
-                ).astimezone(timezone.utc)
+                ).astimezone(UTC)
             except ValueError:
                 continue
 
@@ -292,7 +292,7 @@ class JMAPProvider:
                 data = await r.json()
 
         for em in data["methodResponses"][-1][1].get("list", []):
-            for mb_id in (em.get("mailboxIds") or {}).keys():
+            for mb_id in em.get("mailboxIds") or {}:
                 yield MessageRef(provider_uid=em["id"], mailbox=mb_id)
 
     async def move_messages(
@@ -369,7 +369,5 @@ class JMAPProvider:
         errors = [
             f"{eid}: {err.get('description', err)}" for eid, err in not_updated.items()
         ]
-        moved = sum(len(by_id[eid]) for eid in updated.keys())
-        return MoveResult(
-            moved=moved, failed=len(refs) - moved, errors=errors
-        )
+        moved = sum(len(by_id[eid]) for eid in updated)
+        return MoveResult(moved=moved, failed=len(refs) - moved, errors=errors)

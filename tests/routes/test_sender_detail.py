@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
@@ -37,7 +37,7 @@ def _seed(db):
                 provider_uid=f"u{i}",
                 mailbox="INBOX",
                 subject=f"News {i}",
-                received_at=datetime(2026, 4, i + 1, tzinfo=timezone.utc),
+                received_at=datetime(2026, 4, i + 1, tzinfo=UTC),
             )
         )
     db.commit()

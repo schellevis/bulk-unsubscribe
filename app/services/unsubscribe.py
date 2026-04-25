@@ -37,8 +37,12 @@ def parse_unsubscribe_methods(
             mailto_url = candidate
 
     one_click = False
-    if list_unsubscribe_post and http_url:
-        if "list-unsubscribe=one-click" in list_unsubscribe_post.lower():
-            one_click = True
+    if (
+        list_unsubscribe_post
+        and http_url
+        and http_url.lower().startswith("https://")
+        and "list-unsubscribe=one-click" in list_unsubscribe_post.lower()
+    ):
+        one_click = True
 
     return UnsubscribeMethods(http_url=http_url, mailto_url=mailto_url, one_click=one_click)

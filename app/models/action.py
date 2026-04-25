@@ -1,20 +1,20 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import (
     DateTime,
-    Enum as SAEnum,
     ForeignKey,
     Integer,
     Text,
     func,
 )
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.db import Base
 
 
-class ActionKind(str, Enum):
+class ActionKind(StrEnum):
     unsubscribe_http = "unsubscribe_http"
     unsubscribe_one_click = "unsubscribe_one_click"
     unsubscribe_mailto = "unsubscribe_mailto"
@@ -25,7 +25,7 @@ class ActionKind(str, Enum):
     unwhitelist = "unwhitelist"
 
 
-class ActionStatus(str, Enum):
+class ActionStatus(StrEnum):
     success = "success"
     failed = "failed"
     partial = "partial"

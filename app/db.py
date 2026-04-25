@@ -12,7 +12,7 @@ class Base(DeclarativeBase):
     pass
 
 
-def _set_sqlite_pragma(dbapi_connection, _connection_record) -> None:  # noqa: ANN001
+def _set_sqlite_pragma(dbapi_connection, _connection_record) -> None:
     """Enable foreign-key enforcement for every new SQLite connection."""
     cursor = dbapi_connection.cursor()
     cursor.execute("PRAGMA foreign_keys=ON")

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 
@@ -18,7 +18,7 @@ def _seed(db) -> Account:
     db.add(account)
     db.commit()
 
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     senders = [
         Sender(
             account_id=account.id,

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select, update
 
@@ -53,7 +53,7 @@ def build_scan_work(*, account_id: int, provider, max_messages: int):
             ctx.advance(len(group_msgs))
 
         with session_factory() as s:
-            now = datetime.now(timezone.utc)
+            now = datetime.now(UTC)
             s.execute(
                 update(Account)
                 .where(Account.id == account_id)

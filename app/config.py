@@ -17,7 +17,6 @@ class Settings(BaseSettings):
     database_url: str | None = None
     bind_host: str = "127.0.0.1"
     bind_port: int = 8000
-    auth_password: str | None = None
 
     @field_validator("fernet_key")
     @classmethod

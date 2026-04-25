@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.models.account import Account, ProviderType
 from app.models.sender import Sender, SenderStatus, WhitelistScope
@@ -19,7 +19,7 @@ def _msg(mailbox: str = "INBOX", from_email: str = "x@y.com") -> ScannedMessage:
         from_domain=from_email.split("@", 1)[1],
         display_name="",
         subject="",
-        received_at=datetime.now(timezone.utc),
+        received_at=datetime.now(UTC),
         list_id=None,
         list_unsubscribe="<https://x>",
         list_unsubscribe_post=None,

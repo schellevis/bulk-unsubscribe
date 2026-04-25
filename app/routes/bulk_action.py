@@ -1,7 +1,8 @@
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.db import get_db
@@ -12,9 +13,9 @@ from app.models.job import Job, JobType
 from app.models.sender import Sender, SenderAlias
 from app.providers.base import SenderQuery, SpecialFolder
 from app.services.provider_factory import build_provider
-from sqlalchemy import select
 
 router = APIRouter(tags=["bulk_action"])
+DbSession = Annotated[Session, Depends(get_db)]
 
 Destination = Literal["archive", "trash"]
 
@@ -68,9 +69,9 @@ async def _count_messages(provider, sender: Sender, aliases: list[SenderAlias]) 
 @router.get("/senders/{sender_id}/bulk", response_class=HTMLResponse)
 async def show_bulk_modal(
     sender_id: int,
-    destination: Destination = Query(...),
-    request: Request = None,
-    db: Session = Depends(get_db),
+    destination: Annotated[Destination, Query()],
+    request: Request,
+    db: DbSession,
 ) -> HTMLResponse:
     sender = db.get(Sender, sender_id)
     if sender is None:
@@ -95,9 +96,9 @@ async def show_bulk_modal(
 @router.post("/senders/{sender_id}/bulk", response_class=HTMLResponse)
 def start_bulk_action(
     sender_id: int,
-    destination: Destination = Query(...),
-    request: Request = None,
-    db: Session = Depends(get_db),
+    destination: Annotated[Destination, Query()],
+    request: Request,
+    db: DbSession,
 ) -> HTMLResponse:
     sender = db.get(Sender, sender_id)
     if sender is None:

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.jobs.bulk_action import build_bulk_move_work
 from app.jobs.runner import JobRunner
@@ -52,7 +52,7 @@ async def test_bulk_trash_moves_all_aliases_across_mailboxes(db_session, tmp_pat
             from_email="news@example.com",
             display_name="News",
             subject="A",
-            received_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+            received_at=datetime(2026, 4, 1, tzinfo=UTC),
             list_id=None,
             list_unsubscribe="<https://x>",
             list_unsubscribe_post=None,
@@ -65,7 +65,7 @@ async def test_bulk_trash_moves_all_aliases_across_mailboxes(db_session, tmp_pat
             from_email="news2@example.com",
             display_name="News",
             subject="B",
-            received_at=datetime(2026, 4, 2, tzinfo=timezone.utc),
+            received_at=datetime(2026, 4, 2, tzinfo=UTC),
             list_id=None,
             list_unsubscribe="<https://x>",
             list_unsubscribe_post=None,
@@ -78,7 +78,7 @@ async def test_bulk_trash_moves_all_aliases_across_mailboxes(db_session, tmp_pat
             from_email="other@example.org",
             display_name="Other",
             subject="C",
-            received_at=datetime(2026, 4, 3, tzinfo=timezone.utc),
+            received_at=datetime(2026, 4, 3, tzinfo=UTC),
             list_id=None,
             list_unsubscribe="<https://x>",
             list_unsubscribe_post=None,
@@ -152,7 +152,7 @@ async def test_bulk_archive_marks_sender_archived(db_session, tmp_path):
             from_email="news@example.com",
             display_name="News",
             subject="A",
-            received_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+            received_at=datetime(2026, 4, 1, tzinfo=UTC),
             list_id=None,
             list_unsubscribe="<https://x>",
             list_unsubscribe_post=None,

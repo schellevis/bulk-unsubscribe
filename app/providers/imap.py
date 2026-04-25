@@ -5,7 +5,8 @@ import email.utils
 import imaplib
 import re
 from collections.abc import AsyncIterator
-from datetime import datetime, timezone
+from contextlib import suppress
+from datetime import UTC, datetime
 
 from app.providers.base import (
     Mailbox,
@@ -80,12 +81,10 @@ class IMAPProvider:
     def _login_only_sync(self) -> bool:
         try:
             conn = self._connect()
-        except Exception:  # noqa: BLE001
+        except Exception:
             return False
-        try:
+        with suppress(Exception):
             conn.logout()
-        except Exception:  # noqa: BLE001
-            pass
         return True
 
     def _list_mailboxes_sync(self) -> list[Mailbox]:
@@ -106,10 +105,8 @@ class IMAPProvider:
                 result.append(Mailbox(id=name, name=name, role=_decode_role(flags, name)))
             return result
         finally:
-            try:
+            with suppress(Exception):
                 conn.logout()
-            except Exception:  # noqa: BLE001
-                pass
 
     def _scan_sync(
         self, since: datetime | None, max_messages: int
@@ -159,7 +156,7 @@ class IMAPProvider:
                     try:
                         received = email.utils.parsedate_to_datetime(
                             date_raw
-                        ).astimezone(timezone.utc)
+                        ).astimezone(UTC)
                     except (TypeError, ValueError):
                         continue
 
@@ -190,10 +187,8 @@ class IMAPProvider:
                     )
             return results
         finally:
-            try:
+            with suppress(Exception):
                 conn.logout()
-            except Exception:  # noqa: BLE001
-                pass
 
     def _fetch_snippet_sync(self, ref: MessageRef) -> str:
         conn = self._connect()
@@ -212,10 +207,8 @@ class IMAPProvider:
                         return " ".join(text.split())[:200]
             return ""
         finally:
-            try:
+            with suppress(Exception):
                 conn.logout()
-            except Exception:  # noqa: BLE001
-                pass
 
     # -- Protocol API ----------------------------------------------------------
 
@@ -262,7 +255,7 @@ class IMAPProvider:
             for mb in boxes_to_check:
                 try:
                     conn.select(mb, readonly=True)
-                except Exception:  # noqa: BLE001
+                except Exception:
                     continue
                 for addr in query.from_emails:
                     status, data = conn.uid("SEARCH", None, "FROM", f'"{addr}"')
@@ -274,10 +267,8 @@ class IMAPProvider:
                         )
             return results
         finally:
-            try:
+            with suppress(Exception):
                 conn.logout()
-            except Exception:  # noqa: BLE001
-                pass
 
     def _move_messages_sync(
         self, refs: list[MessageRef], destination: SpecialFolder
@@ -322,7 +313,7 @@ class IMAPProvider:
             for mb, uids in by_mb.items():
                 try:
                     conn.select(mb)
-                except Exception as exc:  # noqa: BLE001
+                except Exception as exc:
                     errors.append(f"select {mb!r}: {exc}")
                     continue
                 uid_set = ",".join(uids).encode()
@@ -341,10 +332,8 @@ class IMAPProvider:
                 moved=moved, failed=len(refs) - moved, errors=errors
             )
         finally:
-            try:
+            with suppress(Exception):
                 conn.logout()
-            except Exception:  # noqa: BLE001
-                pass
 
     async def search_by_sender(  # type: ignore[override]
         self, query: SenderQuery, mailboxes: list[str] | None = None

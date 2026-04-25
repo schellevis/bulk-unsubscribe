@@ -1,10 +1,9 @@
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 
 from sqlalchemy import (
     Boolean,
     DateTime,
-    Enum as SAEnum,
     ForeignKey,
     Integer,
     String,
@@ -12,12 +11,13 @@ from sqlalchemy import (
     UniqueConstraint,
     func,
 )
+from sqlalchemy import Enum as SAEnum
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db import Base
 
 
-class SenderStatus(str, Enum):
+class SenderStatus(StrEnum):
     active = "active"
     unsubscribed = "unsubscribed"
     whitelisted = "whitelisted"
@@ -25,7 +25,7 @@ class SenderStatus(str, Enum):
     archived = "archived"
 
 
-class WhitelistScope(str, Enum):
+class WhitelistScope(StrEnum):
     none = "none"
     sender = "sender"
     domain = "domain"

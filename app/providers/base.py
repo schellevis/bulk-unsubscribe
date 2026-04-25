@@ -1,11 +1,11 @@
 from collections.abc import AsyncIterator
 from dataclasses import dataclass
 from datetime import datetime
-from enum import Enum
+from enum import StrEnum
 from typing import Protocol
 
 
-class SpecialFolder(str, Enum):
+class SpecialFolder(StrEnum):
     inbox = "inbox"
     archive = "archive"
     trash = "trash"

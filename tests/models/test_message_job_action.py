@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from app.models.account import Account, ProviderType
 from app.models.action import Action, ActionKind, ActionStatus
@@ -36,7 +36,7 @@ def test_message_roundtrip(db_session):
         provider_uid="123",
         mailbox="INBOX",
         subject="Hello",
-        received_at=datetime.now(timezone.utc),
+        received_at=datetime.now(UTC),
     )
     db_session.add(msg)
     db_session.commit()

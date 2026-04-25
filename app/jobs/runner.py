@@ -1,7 +1,7 @@
 import asyncio
 import json
 from collections.abc import Awaitable, Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import update
 from sqlalchemy.orm import Session
@@ -68,7 +68,7 @@ class JobRunner:
                 .values(
                     status=JobStatus.failed,
                     error="interrupted by restart",
-                    finished_at=datetime.now(timezone.utc),
+                    finished_at=datetime.now(UTC),
                 )
             )
             s.commit()
@@ -81,7 +81,7 @@ class JobRunner:
                     .where(Job.id == job_id)
                     .values(
                         status=JobStatus.running,
-                        started_at=datetime.now(timezone.utc),
+                        started_at=datetime.now(UTC),
                     )
                 )
                 s.commit()
@@ -89,7 +89,7 @@ class JobRunner:
             ctx = JobContext(job_id, self._session_factory)
             try:
                 result = await work(ctx)
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 with self._session_factory() as s:
                     s.execute(
                         update(Job)
@@ -97,7 +97,7 @@ class JobRunner:
                         .values(
                             status=JobStatus.failed,
                             error=str(exc),
-                            finished_at=datetime.now(timezone.utc),
+                            finished_at=datetime.now(UTC),
                         )
                     )
                     s.commit()
@@ -110,7 +110,7 @@ class JobRunner:
                     .values(
                         status=JobStatus.success,
                         result_json=json.dumps(result) if result is not None else None,
-                        finished_at=datetime.now(timezone.utc),
+                        finished_at=datetime.now(UTC),
                     )
                 )
                 s.commit()

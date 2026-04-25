@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
@@ -11,6 +11,7 @@ from app.services.unsubscribe import UnsubscribeMethods
 from app.services.unsubscribe_exec import execute_one_click
 
 router = APIRouter(tags=["unsubscribe"])
+DbSession = Annotated[Session, Depends(get_db)]
 
 Method = Literal["one_click", "http", "mailto"]
 
@@ -22,10 +23,11 @@ def _templates():
 
 
 def _methods_for(sender: Sender) -> UnsubscribeMethods:
+    one_click_url = (sender.unsubscribe_http or "").lower().startswith("https://")
     return UnsubscribeMethods(
         http_url=sender.unsubscribe_http,
         mailto_url=sender.unsubscribe_mailto,
-        one_click=bool(sender.unsubscribe_one_click_post and sender.unsubscribe_http),
+        one_click=bool(sender.unsubscribe_one_click_post and one_click_url),
     )
 
 
@@ -33,7 +35,7 @@ def _methods_for(sender: Sender) -> UnsubscribeMethods:
 def show_unsubscribe(
     sender_id: int,
     request: Request,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> HTMLResponse:
     sender = db.get(Sender, sender_id)
     if sender is None:
@@ -54,8 +56,8 @@ def show_unsubscribe(
 async def execute_unsubscribe(
     sender_id: int,
     request: Request,
-    method: Method = Query(...),
-    db: Session = Depends(get_db),
+    method: Annotated[Method, Query()],
+    db: DbSession,
 ) -> HTMLResponse:
     sender = db.get(Sender, sender_id)
     if sender is None:
@@ -70,7 +72,8 @@ async def execute_unsubscribe(
     }[method]
 
     if method == "one_click":
-        if not sender.unsubscribe_http or not sender.unsubscribe_one_click_post:
+        one_click_url = (sender.unsubscribe_http or "").lower().startswith("https://")
+        if not sender.unsubscribe_http or not sender.unsubscribe_one_click_post or not one_click_url:
             raise HTTPException(status_code=400, detail="One-click not available")
         result = await execute_one_click(sender.unsubscribe_http)
         success = result.success

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from aioresponses import aioresponses
 
@@ -77,7 +77,7 @@ async def test_scan_headers_yields_only_messages_with_list_unsubscribe():
     assert only.from_domain == "example.com"
     assert only.list_unsubscribe == "<https://example.com/u/1>"
     assert only.list_unsubscribe_post == "List-Unsubscribe=One-Click"
-    assert only.received_at == datetime(2026, 4, 1, 10, 0, tzinfo=timezone.utc)
+    assert only.received_at == datetime(2026, 4, 1, 10, 0, tzinfo=UTC)
     assert only.ref.mailbox == "Inbox"
 
 

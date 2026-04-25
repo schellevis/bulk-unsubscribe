@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta, timezone
-from typing import Literal
+from datetime import UTC, datetime, timedelta
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
@@ -14,6 +14,7 @@ from app.providers.base import MessageRef
 from app.services.provider_factory import build_provider as _provider_for_account
 
 router = APIRouter(tags=["senders"])
+DbSession = Annotated[Session, Depends(get_db)]
 
 Period = Literal["7d", "30d", "90d", "all"]
 Grouping = Literal["sender", "domain"]
@@ -21,7 +22,7 @@ ShowMode = Literal["active", "whitelisted"]
 
 
 def _period_floor(period: Period) -> datetime | None:
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     if period == "7d":
         return now - timedelta(days=7)
     if period == "30d":
@@ -40,11 +41,11 @@ def _templates():
 @router.get("/", response_class=HTMLResponse)
 def index(
     request: Request,
-    account_id: int | None = Query(default=None),
-    period: Period = Query(default="30d"),
-    group: Grouping = Query(default="sender"),
-    show: ShowMode = Query(default="active"),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    account_id: Annotated[int | None, Query()] = None,
+    period: Annotated[Period, Query()] = "30d",
+    group: Annotated[Grouping, Query()] = "sender",
+    show: Annotated[ShowMode, Query()] = "active",
 ) -> HTMLResponse:
     accounts = db.execute(select(Account).order_by(Account.created_at)).scalars().all()
     if account_id is None and accounts:
@@ -122,7 +123,7 @@ def _query_rows(
 
 @router.get("/senders/{sender_id}", response_class=HTMLResponse)
 def sender_detail(
-    sender_id: int, request: Request, db: Session = Depends(get_db)
+    sender_id: int, request: Request, db: DbSession
 ) -> HTMLResponse:
     sender = db.get(Sender, sender_id)
     if sender is None:
@@ -152,7 +153,7 @@ async def message_preview(
     sender_id: int,
     provider_uid: str,
     request: Request,
-    db: Session = Depends(get_db),
+    db: DbSession,
 ) -> HTMLResponse:
     sender = db.get(Sender, sender_id)
     if sender is None:

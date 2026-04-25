@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from sqlalchemy import func, select
@@ -10,6 +12,7 @@ from app.models.whitelist_rule import WhitelistKind, WhitelistRule
 from app.services.whitelist import recompute_sender_statuses
 
 router = APIRouter(prefix="/whitelist", tags=["whitelist"])
+DbSession = Annotated[Session, Depends(get_db)]
 
 
 def _templates():
@@ -21,8 +24,8 @@ def _templates():
 @router.get("", response_class=HTMLResponse)
 def list_rules(
     request: Request,
-    account_id: int | None = Query(default=None),
-    db: Session = Depends(get_db),
+    db: DbSession,
+    account_id: Annotated[int | None, Query()] = None,
 ) -> HTMLResponse:
     accounts = (
         db.execute(select(Account).order_by(Account.created_at)).scalars().all()
@@ -80,10 +83,10 @@ def list_rules(
 
 @router.post("")
 def create_rule(
-    account_id: int = Form(...),
-    kind: WhitelistKind = Form(...),
-    value: str = Form(...),
-    db: Session = Depends(get_db),
+    account_id: Annotated[int, Form()],
+    kind: Annotated[WhitelistKind, Form()],
+    value: Annotated[str, Form()],
+    db: DbSession,
 ):
     if not db.get(Account, account_id):
         raise HTTPException(status_code=404)
@@ -107,7 +110,7 @@ def create_rule(
 
 
 @router.post("/{rule_id}/delete")
-def delete_rule(rule_id: int, db: Session = Depends(get_db)):
+def delete_rule(rule_id: int, db: DbSession):
     rule = db.get(WhitelistRule, rule_id)
     if not rule:
         raise HTTPException(status_code=404)

@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from aioresponses import aioresponses
 
@@ -36,7 +36,7 @@ async def test_scan_skips_mailbox_whitelisted(db_session, tmp_path):
                 from_email="news@example.com",
                 display_name="N",
                 subject="A",
-                received_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+                received_at=datetime(2026, 4, 1, tzinfo=UTC),
                 list_id="<a>",
                 list_unsubscribe="<https://x>",
                 list_unsubscribe_post=None,
@@ -49,7 +49,7 @@ async def test_scan_skips_mailbox_whitelisted(db_session, tmp_path):
                 from_email="promo@example.com",
                 display_name="P",
                 subject="B",
-                received_at=datetime(2026, 4, 2, tzinfo=timezone.utc),
+                received_at=datetime(2026, 4, 2, tzinfo=UTC),
                 list_id="<b>",
                 list_unsubscribe="<https://y>",
                 list_unsubscribe_post=None,
@@ -95,7 +95,7 @@ async def test_scan_marks_domain_whitelisted_after_persist(db_session, tmp_path)
                 from_email="news@example.com",
                 display_name="N",
                 subject="A",
-                received_at=datetime(2026, 4, 1, tzinfo=timezone.utc),
+                received_at=datetime(2026, 4, 1, tzinfo=UTC),
                 list_id="<a>",
                 list_unsubscribe="<https://x>",
                 list_unsubscribe_post=None,

@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pydantic import EmailStr
@@ -11,6 +13,7 @@ from app.providers.jmap import JMAPProvider
 from app.services.crypto import CredentialCipher
 
 router = APIRouter(prefix="/accounts", tags=["accounts"])
+DbSession = Annotated[Session, Depends(get_db)]
 
 
 def _templates():
@@ -20,7 +23,7 @@ def _templates():
 
 
 @router.get("", response_class=HTMLResponse)
-def list_accounts(request: Request, db: Session = Depends(get_db)) -> HTMLResponse:
+def list_accounts(request: Request, db: DbSession) -> HTMLResponse:
     accounts = db.execute(
         select(Account).order_by(Account.created_at.desc())
     ).scalars().all()
@@ -31,13 +34,13 @@ def list_accounts(request: Request, db: Session = Depends(get_db)) -> HTMLRespon
 
 @router.post("/imap")
 async def create_imap_account(
-    name: str = Form(...),
-    email: EmailStr = Form(...),
-    imap_host: str = Form(...),
-    imap_port: int = Form(993),
-    imap_username: str = Form(...),
-    password: str = Form(...),
-    db: Session = Depends(get_db),
+    name: Annotated[str, Form()],
+    email: Annotated[EmailStr, Form()],
+    imap_host: Annotated[str, Form()],
+    imap_username: Annotated[str, Form()],
+    password: Annotated[str, Form()],
+    db: DbSession,
+    imap_port: Annotated[int, Form()] = 993,
 ):
     provider = IMAPProvider(imap_host, imap_port, imap_username, password)
     if not await provider.test_credentials():
@@ -60,10 +63,10 @@ async def create_imap_account(
 
 @router.post("/jmap")
 async def create_jmap_account(
-    name: str = Form(...),
-    email: EmailStr = Form(...),
-    api_token: str = Form(...),
-    db: Session = Depends(get_db),
+    name: Annotated[str, Form()],
+    email: Annotated[EmailStr, Form()],
+    api_token: Annotated[str, Form()],
+    db: DbSession,
 ):
     provider = JMAPProvider(api_token=api_token)
     if not await provider.test_credentials():
@@ -82,7 +85,7 @@ async def create_jmap_account(
 
 
 @router.post("/{account_id}/delete")
-def delete_account(account_id: int, db: Session = Depends(get_db)):
+def delete_account(account_id: int, db: DbSession):
     account = db.get(Account, account_id)
     if not account:
         raise HTTPException(status_code=404)

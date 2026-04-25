@@ -41,6 +41,15 @@ def test_one_click_only_when_http_present():
     assert m.one_click is False
 
 
+def test_one_click_requires_https_url():
+    m = parse_unsubscribe_methods(
+        list_unsubscribe="<http://example.com/u>",
+        list_unsubscribe_post="List-Unsubscribe=One-Click",
+    )
+    assert m.http_url == "http://example.com/u"
+    assert m.one_click is False
+
+
 def test_empty_inputs():
     m = parse_unsubscribe_methods(list_unsubscribe="", list_unsubscribe_post=None)
     assert m == UnsubscribeMethods(http_url=None, mailto_url=None, one_click=False)
