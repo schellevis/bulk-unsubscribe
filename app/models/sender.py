@@ -22,6 +22,7 @@ class SenderStatus(str, Enum):
     unsubscribed = "unsubscribed"
     whitelisted = "whitelisted"
     trashed = "trashed"
+    archived = "archived"
 
 
 class WhitelistScope(str, Enum):
