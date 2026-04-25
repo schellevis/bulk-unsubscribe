@@ -240,13 +240,126 @@ class IMAPProvider:
     async def fetch_body(self, ref: MessageRef) -> bytes:
         raise NotImplementedError
 
+    def _search_by_sender_sync(
+        self, query: SenderQuery, mailboxes: list[str] | None
+    ) -> list[MessageRef]:
+        conn = self._connect()
+        try:
+            if mailboxes is not None:
+                boxes_to_check = mailboxes
+            else:
+                status, lines = conn.list()
+                boxes_to_check = []
+                if status == "OK" and lines:
+                    for raw in lines:
+                        if raw is None:
+                            continue
+                        m = _LIST_RE.match(raw)
+                        if m:
+                            boxes_to_check.append(
+                                m.group("name").decode("utf-8", errors="replace")
+                            )
+
+            results: list[MessageRef] = []
+            for mb in boxes_to_check:
+                try:
+                    conn.select(mb, readonly=True)
+                except Exception:  # noqa: BLE001
+                    continue
+                for addr in query.from_emails:
+                    status, data = conn.uid("SEARCH", None, "FROM", f'"{addr}"')
+                    if status != "OK" or not data or not data[0]:
+                        continue
+                    for uid in data[0].split():
+                        results.append(
+                            MessageRef(provider_uid=uid.decode(), mailbox=mb)
+                        )
+            return results
+        finally:
+            try:
+                conn.logout()
+            except Exception:  # noqa: BLE001
+                pass
+
+    def _move_messages_sync(
+        self, refs: list[MessageRef], destination: SpecialFolder
+    ) -> MoveResult:
+        if not refs:
+            return MoveResult(moved=0, failed=0, errors=[])
+
+        conn = self._connect()
+        try:
+            target_name: str | None = None
+            status, lines = conn.list()
+            if status == "OK" and lines:
+                for raw in lines:
+                    if raw is None:
+                        continue
+                    m = _LIST_RE.match(raw)
+                    if not m:
+                        continue
+                    name = m.group("name").decode("utf-8", errors="replace")
+                    role = _decode_role(m.group("flags"), name)
+                    if role == destination:
+                        target_name = name
+                        break
+            if target_name is None:
+                target_name = {
+                    SpecialFolder.archive: "Archive",
+                    SpecialFolder.trash: "Trash",
+                }.get(destination)
+            if target_name is None:
+                return MoveResult(
+                    moved=0,
+                    failed=len(refs),
+                    errors=["No destination folder discovered"],
+                )
+
+            by_mb: dict[str, list[str]] = {}
+            for r in refs:
+                by_mb.setdefault(r.mailbox, []).append(r.provider_uid)
+
+            moved = 0
+            errors: list[str] = []
+            for mb, uids in by_mb.items():
+                try:
+                    conn.select(mb)
+                except Exception as exc:  # noqa: BLE001
+                    errors.append(f"select {mb!r}: {exc}")
+                    continue
+                uid_set = ",".join(uids).encode()
+                move_status, _ = conn.uid("MOVE", uid_set, target_name)
+                if move_status == "OK":
+                    moved += len(uids)
+                    continue
+                copy_status, _ = conn.uid("COPY", uid_set, target_name)
+                if copy_status == "OK":
+                    conn.uid("STORE", uid_set, "+FLAGS", r"(\Deleted)")
+                    conn.expunge()
+                    moved += len(uids)
+                else:
+                    errors.append(f"copy {mb!r} failed")
+            return MoveResult(
+                moved=moved, failed=len(refs) - moved, errors=errors
+            )
+        finally:
+            try:
+                conn.logout()
+            except Exception:  # noqa: BLE001
+                pass
+
     async def search_by_sender(  # type: ignore[override]
         self, query: SenderQuery, mailboxes: list[str] | None = None
     ) -> AsyncIterator[MessageRef]:
-        raise NotImplementedError
-        yield  # pragma: no cover
+        refs = await asyncio.to_thread(
+            self._search_by_sender_sync, query, mailboxes
+        )
+        for r in refs:
+            yield r
 
     async def move_messages(
         self, refs: list[MessageRef], destination: SpecialFolder
     ) -> MoveResult:
-        raise NotImplementedError
+        return await asyncio.to_thread(
+            self._move_messages_sync, refs, destination
+        )
