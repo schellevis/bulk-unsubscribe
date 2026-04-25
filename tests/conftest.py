@@ -1,3 +1,4 @@
+import os
 from collections.abc import Generator
 from pathlib import Path
 
@@ -5,10 +6,13 @@ import pytest
 from cryptography.fernet import Fernet
 from sqlalchemy.orm import Session
 
-from app.config import Settings, get_settings
-from app.db import Base, get_engine, get_session_factory
-
+# Set the Fernet key at conftest import time so app.main can be imported
+# from any test module without ad-hoc env setup.
 _TEST_FERNET_KEY = Fernet.generate_key().decode()
+os.environ.setdefault("BU_FERNET_KEY", _TEST_FERNET_KEY)
+
+from app.config import Settings, get_settings  # noqa: E402
+from app.db import Base, get_engine, get_session_factory  # noqa: E402
 
 
 @pytest.fixture(autouse=True)
