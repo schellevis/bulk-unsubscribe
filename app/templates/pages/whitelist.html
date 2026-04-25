@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% block title %}Whitelist — Bulk Unsubscribe{% endblock %}
+{% block content %}
+<form method="get" action="/whitelist" class="card">
+  <select name="account_id">
+    {% for a in accounts %}
+    <option value="{{ a.id }}" {% if selected_account and selected_account.id == a.id %}selected{% endif %}>{{ a.name }} ({{ a.email }})</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Switch</button>
+</form>
+
+{% if selected_account %}
+<h2>Whitelist for {{ selected_account.email }}</h2>
+{% if rules %}
+{% for r in rules %}
+<div class="card flex between">
+  <div>
+    <strong>{{ r.kind.value }}</strong>: {{ r.value }}
+    <div class="muted">{{ affected.get(r.id, 0) }} matching sender(s)</div>
+  </div>
+  <form method="post" action="/whitelist/{{ r.id }}/delete">
+    <button class="secondary" type="submit"
+            onclick="return confirm('Remove this whitelist rule?')">Remove</button>
+  </form>
+</div>
+{% endfor %}
+{% else %}
+<p class="muted">No whitelist rules yet.</p>
+{% endif %}
+
+<h3>Add rule</h3>
+<form method="post" action="/whitelist" class="card">
+  <input type="hidden" name="account_id" value="{{ selected_account.id }}">
+  <div class="field">
+    <label>Kind</label>
+    <select name="kind">
+      {% for k in kinds %}
+      <option value="{{ k.value }}">{{ k.value }}</option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label>Value (email, domain, or mailbox/label name — sub-folders match by prefix)</label>
+    <input name="value" required>
+  </div>
+  <button type="submit">Add rule</button>
+</form>
+{% else %}
+<p class="muted">No accounts yet. <a href="/accounts">Add one</a> first.</p>
+{% endif %}
+{% endblock %}

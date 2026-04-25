@@ -31,10 +31,12 @@ app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
 from app.routes import accounts as accounts_routes  # noqa: E402
 from app.routes import jobs as jobs_routes  # noqa: E402
 from app.routes import senders as senders_routes  # noqa: E402
+from app.routes import whitelist as whitelist_routes  # noqa: E402
 
 app.include_router(accounts_routes.router)
 app.include_router(jobs_routes.router)
 app.include_router(senders_routes.router)
+app.include_router(whitelist_routes.router)
 
 
 @app.get("/healthz")
