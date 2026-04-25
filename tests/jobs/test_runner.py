@@ -19,7 +19,7 @@ def _make_account(db) -> Account:
 
 async def test_runner_runs_job_to_success(db_session, tmp_path):
     account = _make_account(db_session)
-    db_url = f"sqlite:///{tmp_path}/test.db"
+    db_url = f"sqlite:///{tmp_path}/bulk-unsubscribe.db"
     job_id = JobRunner.create_job(
         db_session,
         type=JobType.scan,
@@ -47,7 +47,7 @@ async def test_runner_runs_job_to_success(db_session, tmp_path):
 
 async def test_runner_marks_job_failed_on_exception(db_session, tmp_path):
     account = _make_account(db_session)
-    db_url = f"sqlite:///{tmp_path}/test.db"
+    db_url = f"sqlite:///{tmp_path}/bulk-unsubscribe.db"
     job_id = JobRunner.create_job(
         db_session, type=JobType.scan, account_id=account.id, params=None
     )
@@ -66,7 +66,7 @@ async def test_runner_marks_job_failed_on_exception(db_session, tmp_path):
 
 def test_recover_running_jobs_marks_them_failed(db_session, tmp_path):
     account = _make_account(db_session)
-    db_url = f"sqlite:///{tmp_path}/test.db"
+    db_url = f"sqlite:///{tmp_path}/bulk-unsubscribe.db"
     job = Job(account_id=account.id, type=JobType.scan, status=JobStatus.running)
     db_session.add(job)
     db_session.commit()

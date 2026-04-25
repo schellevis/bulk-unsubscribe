@@ -23,7 +23,10 @@ def settings(tmp_path: Path) -> Settings:
 
 @pytest.fixture()
 def db_session(tmp_path: Path) -> Generator[Session, None, None]:
-    url = f"sqlite:///{tmp_path}/test.db"
+    # Use the same URL the app's default settings would resolve to,
+    # so jobs/runners/etc. that call get_session_factory() with no URL
+    # write to the same SQLite file.
+    url = f"sqlite:///{tmp_path}/bulk-unsubscribe.db"
     engine = get_engine(url)
     Base.metadata.create_all(engine)
     SessionLocal = get_session_factory(url)
