@@ -1,7 +1,7 @@
 from sqlalchemy import select, text
 
 from app.db import Base, get_engine, get_session_factory
-from app.models import account, job, sender, whitelist_rule  # noqa: F401 – register models
+from app.models import account, job, sender, whitelist_rule  # noqa: F401 — register models
 from app.models.account import Account, ProviderType
 from app.models.job import Job, JobType
 from app.models.sender import Sender
