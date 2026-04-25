@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.sessions import SessionMiddleware
 
-from app.auth import AuthMiddleware, check_password, session_secret
+from app.auth import AuthMiddleware, check_password, safe_next, session_secret
 from app.config import get_settings
 from app.jobs.runner import JobRunner
 
@@ -72,7 +72,7 @@ def login_submit(
 ):
     if check_password(password):
         request.session["authed"] = True
-        return RedirectResponse(url=next or "/", status_code=303)
+        return RedirectResponse(url=safe_next(next), status_code=303)
     return templates.TemplateResponse(
         request,
         "pages/login.html",

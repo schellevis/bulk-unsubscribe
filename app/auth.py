@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+from urllib.parse import urlparse
 
 from fastapi import Request
 from fastapi.responses import RedirectResponse
@@ -31,3 +32,21 @@ def check_password(submitted: str) -> bool:
     if not expected:
         return False
     return hmac.compare_digest(submitted, expected)
+
+
+def safe_next(next_url: str | None) -> str:
+    """Return *next_url* only when it is a safe same-origin relative path.
+
+    A safe path must start with exactly one ``/``, must not be a
+    protocol-relative URL (``//host``), and must not carry a scheme or
+    authority (detected via :func:`urllib.parse.urlparse`).
+    Any value that fails these checks falls back to ``/``.
+    """
+    if not next_url:
+        return "/"
+    parsed = urlparse(next_url)
+    if parsed.scheme or parsed.netloc:
+        return "/"
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        return "/"
+    return next_url
