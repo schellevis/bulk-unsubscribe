@@ -80,7 +80,7 @@ def build_bulk_move_work(
                 sender.status = (
                     SenderStatus.trashed
                     if destination == SpecialFolder.trash
-                    else SenderStatus.unsubscribed
+                    else SenderStatus.archived
                 )
             s.commit()
 
