@@ -81,7 +81,14 @@ async def show_bulk_modal(
         db.scalars(select(SenderAlias).where(SenderAlias.sender_id == sender_id))
     )
     provider = build_provider(account)
-    count = await _count_messages(provider, sender, aliases)
+    count: int | None
+    count_error: str | None
+    try:
+        count = await _count_messages(provider, sender, aliases)
+        count_error = None
+    except Exception as exc:
+        count = None
+        count_error = str(exc) or exc.__class__.__name__
     return _templates().TemplateResponse(
         request,
         "fragments/bulk_action_modal.html",
@@ -89,6 +96,7 @@ async def show_bulk_modal(
             "sender": sender,
             "destination": _resolve_destination(destination),
             "count": count,
+            "count_error": count_error,
         },
     )
 

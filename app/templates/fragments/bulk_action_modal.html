@@ -1,7 +1,18 @@
 <div class="card">
+  {% if count_error %}
+  <strong>Could not contact mail provider</strong>
+  <div class="muted" style="margin-top:0.25rem;">{{ count_error }}</div>
+  <p style="margin-top:0.75rem;">
+    Move all messages from
+    <strong>{{ sender.display_name or sender.from_email }}</strong>
+    to <strong>{{ destination.value }}</strong> anyway? The job will retry the
+    move and report any failures.
+  </p>
+  {% else %}
   <strong>{{ count }}</strong> messages from
   <strong>{{ sender.display_name or sender.from_email }}</strong>
   will be moved to <strong>{{ destination.value }}</strong>.
+  {% endif %}
   <form hx-post="/senders/{{ sender.id }}/bulk?destination={{ destination.value }}"
         hx-target="#bulk-status-{{ sender.id }}" hx-swap="innerHTML"
         style="margin-top:0.5rem;">

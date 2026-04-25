@@ -47,6 +47,24 @@ def test_show_bulk_modal_renders_count(db_session):
     assert "trash" in r.text
 
 
+def test_show_bulk_modal_renders_when_provider_unreachable(db_session):
+    async def failing_search(self, query, mailboxes=None):
+        raise OSError("No address associated with hostname")
+        yield  # pragma: no cover - make this an async generator
+
+    with TestClient(app) as c, patch(
+        "app.routes.bulk_action.build_provider"
+    ) as mk:
+        mk.return_value.search_by_sender = lambda query: failing_search(None, query)
+        _, sender = _seed(db_session)
+        r = c.get(f"/senders/{sender.id}/bulk?destination=archive")
+
+    assert r.status_code == 200
+    assert "Could not contact mail provider" in r.text
+    assert "No address associated with hostname" in r.text
+    assert "archive" in r.text
+
+
 def test_start_bulk_action_creates_job_and_dispatches(db_session):
     with TestClient(app) as c, patch(
         "app.routes.bulk_action._dispatch_bulk_job"

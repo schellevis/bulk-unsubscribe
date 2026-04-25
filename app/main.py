@@ -1,3 +1,5 @@
+import logging
+import os
 from contextlib import asynccontextmanager
 from pathlib import Path
 
@@ -15,9 +17,21 @@ STATIC_DIR = BASE_DIR.parent / "static"
 
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
+logger = logging.getLogger(__name__)
+
+
+def _warn_on_removed_env_vars() -> None:
+    if os.environ.get("BU_AUTH_PASSWORD"):
+        logger.warning(
+            "BU_AUTH_PASSWORD is set but no longer used; the built-in login gate "
+            "was removed. Put the app behind a reverse proxy with auth if you "
+            "expose it beyond localhost."
+        )
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    _warn_on_removed_env_vars()
     settings = get_settings()
     from app.services.crypto import CredentialCipher
 
