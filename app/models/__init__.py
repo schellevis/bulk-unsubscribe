@@ -6,6 +6,7 @@ from app.models.action import Action, ActionKind, ActionStatus
 from app.models.job import Job, JobStatus, JobType
 from app.models.message import Message
 from app.models.sender import Sender, SenderAlias, SenderStatus, WhitelistScope
+from app.models.whitelist_rule import WhitelistKind, WhitelistRule
 
 
 def register_all() -> type[Base]:
@@ -26,5 +27,7 @@ __all__ = [
     "Action",
     "ActionKind",
     "ActionStatus",
+    "WhitelistRule",
+    "WhitelistKind",
     "register_all",
 ]
