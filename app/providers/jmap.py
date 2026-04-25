@@ -55,7 +55,34 @@ class JMAPProvider:
             return False
 
     async def list_mailboxes(self) -> list[Mailbox]:
-        raise NotImplementedError
+        async with aiohttp.ClientSession() as http:
+            if self._api_url is None:
+                await self._get_session(http)
+            payload = {
+                "using": _CAPS,
+                "methodCalls": [
+                    [
+                        "Mailbox/get",
+                        {"accountId": self._account_id},
+                        "0",
+                    ]
+                ],
+            }
+            async with http.post(
+                self._api_url, json=payload, headers=self._headers
+            ) as r:
+                r.raise_for_status()
+                data = await r.json()
+
+        raw = data["methodResponses"][0][1].get("list", [])
+        return [
+            Mailbox(
+                id=m["id"],
+                name=m.get("name", ""),
+                role=_ROLE_MAP.get((m.get("role") or "").lower()),
+            )
+            for m in raw
+        ]
 
     async def scan_headers(  # type: ignore[override]
         self, since: datetime | None, max_messages: int
