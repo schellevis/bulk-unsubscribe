@@ -10,6 +10,11 @@ from app.models.sender import Sender, SenderAlias
 from app.providers.base import ScannedMessage
 from app.services.grouping import compute_group_key, extract_domain
 from app.services.unsubscribe import parse_unsubscribe_methods
+from app.services.whitelist import (
+    load_rules,
+    recompute_sender_statuses,
+    should_skip_during_scan,
+)
 
 
 async def _collect_scan(
@@ -30,8 +35,10 @@ def build_scan_work(*, account_id: int, provider, max_messages: int):
         with session_factory() as s:
             account = s.get(Account, account_id)
             since = account.last_incremental_scan_at if account else None
+            rules = load_rules(s, account_id)
 
         scanned = await _collect_scan(provider, since=since, max_messages=max_messages)
+        scanned = [m for m in scanned if not should_skip_during_scan(rules, m)]
         ctx.set_total(len(scanned))
 
         by_group: dict[str, list[ScannedMessage]] = {}
@@ -56,6 +63,9 @@ def build_scan_work(*, account_id: int, provider, max_messages: int):
                 )
             )
             s.commit()
+
+        with session_factory() as s:
+            recompute_sender_statuses(s, account_id)
 
         return {"messages_seen": len(scanned), "groups": len(by_group)}
 
