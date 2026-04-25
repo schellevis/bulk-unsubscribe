@@ -163,13 +163,11 @@ class IMAPProvider:
                     except (TypeError, ValueError):
                         continue
 
-                    uid_match = re.match(
-                        rb"\s*(\d+)\s+\(",
-                        meta if isinstance(meta, (bytes, bytearray)) else b"",
-                    )
-                    provider_uid = (
-                        uid_match.group(1).decode() if uid_match else ""
-                    )
+                    meta_bytes = meta if isinstance(meta, (bytes, bytearray)) else b""
+                    uid_match = re.search(rb"\bUID\s+(\d+)\b", meta_bytes)
+                    if uid_match is None:
+                        uid_match = re.match(rb"\s*(\d+)\s+\(", meta_bytes)
+                    provider_uid = uid_match.group(1).decode() if uid_match else ""
 
                     display_name, _ = _parse_from(msg.get("From", ""))
 
