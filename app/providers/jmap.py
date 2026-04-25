@@ -95,9 +95,14 @@ class JMAPProvider:
                 "using": _CAPS,
                 "methodCalls": [
                     [
+                        "Mailbox/get",
+                        {"accountId": self._account_id, "ids": None},
+                        "0",
+                    ],
+                    [
                         "Mailbox/query",
                         {"accountId": self._account_id, "filter": {"role": "inbox"}},
-                        "0",
+                        "1",
                     ],
                     [
                         "Email/query",
@@ -105,7 +110,7 @@ class JMAPProvider:
                             "accountId": self._account_id,
                             "filter": {
                                 "inMailbox": {
-                                    "resultOf": "0",
+                                    "resultOf": "1",
                                     "name": "Mailbox/query",
                                     "path": "/ids/0",
                                 }
@@ -115,14 +120,14 @@ class JMAPProvider:
                             ],
                             "limit": max_messages,
                         },
-                        "1",
+                        "2",
                     ],
                     [
                         "Email/get",
                         {
                             "accountId": self._account_id,
                             "#ids": {
-                                "resultOf": "1",
+                                "resultOf": "2",
                                 "name": "Email/query",
                                 "path": "/ids",
                             },
@@ -137,7 +142,7 @@ class JMAPProvider:
                                 "header:List-Unsubscribe-Post:asText",
                             ],
                         },
-                        "2",
+                        "3",
                     ],
                 ],
             }
@@ -146,6 +151,11 @@ class JMAPProvider:
             ) as r:
                 r.raise_for_status()
                 data = await r.json()
+
+        mailbox_names: dict[str, str] = {
+            m["id"]: m.get("name", m["id"])
+            for m in data["methodResponses"][0][1].get("list", [])
+        }
 
         emails = data["methodResponses"][-1][1].get("list", [])
         for em in emails:
@@ -169,7 +179,8 @@ class JMAPProvider:
                 continue
 
             mailbox_ids = list((em.get("mailboxIds") or {}).keys())
-            mailbox = mailbox_ids[0] if mailbox_ids else ""
+            mailbox_id = mailbox_ids[0] if mailbox_ids else ""
+            mailbox = mailbox_names.get(mailbox_id, mailbox_id)
 
             if since is not None and received < since:
                 continue
