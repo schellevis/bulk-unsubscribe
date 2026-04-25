@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Senders — Bulk Unsubscribe{% endblock %}
+
+{% block content %}
+<form method="get" action="/" class="card">
+  <div class="flex" style="flex-wrap: wrap; gap: 0.5rem;">
+    <select name="account_id">
+      {% for a in accounts %}
+      <option value="{{ a.id }}"
+              {% if selected_account and selected_account.id == a.id %}selected{% endif %}>
+        {{ a.name }} ({{ a.email }})
+      </option>
+      {% endfor %}
+    </select>
+    <select name="period">
+      {% for p in ["7d", "30d", "90d", "all"] %}
+      <option value="{{ p }}" {% if period == p %}selected{% endif %}>{{ p }}</option>
+      {% endfor %}
+    </select>
+    <select name="group">
+      <option value="sender" {% if group == "sender" %}selected{% endif %}>Per sender</option>
+      <option value="domain" {% if group == "domain" %}selected{% endif %}>Per domain</option>
+    </select>
+    <button type="submit">Apply</button>
+  </div>
+</form>
+
+{% if not accounts %}
+<p class="muted">No accounts yet. <a href="/accounts">Add one</a> to get started.</p>
+{% elif not rows %}
+<p class="muted">Nothing to show. Run a scan from the <a href="/accounts">Accounts</a> page.</p>
+{% else %}
+{% for row in rows %}
+  {% include "fragments/sender_row.html" %}
+{% endfor %}
+{% endif %}
+{% endblock %}

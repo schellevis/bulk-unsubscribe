@@ -187,7 +187,32 @@ class JMAPProvider:
             )
 
     async def fetch_snippet(self, ref: MessageRef) -> str:
-        raise NotImplementedError
+        async with aiohttp.ClientSession() as http:
+            if self._api_url is None:
+                await self._get_session(http)
+            payload = {
+                "using": _CAPS,
+                "methodCalls": [
+                    [
+                        "Email/get",
+                        {
+                            "accountId": self._account_id,
+                            "ids": [ref.provider_uid],
+                            "properties": ["preview", "subject"],
+                        },
+                        "0",
+                    ]
+                ],
+            }
+            async with http.post(
+                self._api_url, json=payload, headers=self._headers
+            ) as r:
+                r.raise_for_status()
+                data = await r.json()
+        items = data["methodResponses"][0][1].get("list", [])
+        if not items:
+            return ""
+        return (items[0].get("preview") or "").strip()
 
     async def fetch_body(self, ref: MessageRef) -> bytes:
         raise NotImplementedError

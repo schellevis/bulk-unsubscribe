@@ -1,0 +1,18 @@
+<div class="card flex between">
+  <div>
+    {% if group == "sender" %}
+      <strong>{{ row.display_name or row.from_email }}</strong>
+      <div class="muted">{{ row.from_email }} · {{ row.from_domain }}</div>
+    {% else %}
+      <strong>{{ row.from_domain }}</strong>
+      <div class="muted">domain</div>
+    {% endif %}
+    <div class="muted">
+      {{ row.count }} message{{ "s" if row.count != 1 else "" }}
+      {% if row.last_seen %} · last on {{ row.last_seen.strftime("%Y-%m-%d") }}{% endif %}
+    </div>
+  </div>
+  {% if group == "sender" %}
+  <a class="btn secondary" href="/senders/{{ row.sender_id }}">Open</a>
+  {% endif %}
+</div>

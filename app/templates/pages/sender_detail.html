@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block title %}{{ sender.display_name or sender.from_email }} — Bulk Unsubscribe{% endblock %}
+
+{% block content %}
+<a class="muted" href="/">← back</a>
+<div class="card">
+  <h2 style="margin-top:0">{{ sender.display_name or sender.from_email }}</h2>
+  <div class="muted">{{ sender.from_email }} · {{ sender.from_domain }}</div>
+  {% if sender.list_id %}<div class="muted">List-Id: {{ sender.list_id }}</div>{% endif %}
+  <div class="muted">
+    Status: {{ sender.status.value }}
+    {% if sender.unsubscribe_one_click_post %} · 🟢 one-click supported{% endif %}
+    {% if sender.unsubscribe_http %} · HTTP link available{% endif %}
+    {% if sender.unsubscribe_mailto %} · mailto link available{% endif %}
+  </div>
+</div>
+
+<h3>Recent messages ({{ messages|length }})</h3>
+{% for m in messages %}
+<div class="card" id="msg-{{ m.provider_uid }}">
+  <div class="flex between">
+    <div>
+      <strong>{{ m.subject or "(no subject)" }}</strong>
+      <div class="muted">{{ m.received_at.strftime("%Y-%m-%d %H:%M") }} · {{ m.mailbox }}</div>
+    </div>
+    <button class="secondary"
+            hx-get="/senders/{{ sender.id }}/messages/{{ m.provider_uid }}/preview"
+            hx-target="#preview-{{ m.provider_uid }}"
+            hx-swap="innerHTML">Preview</button>
+  </div>
+  <div id="preview-{{ m.provider_uid }}" class="muted" style="margin-top:0.5rem;">
+    <em>lazy preview — click "Preview" to load.</em>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}
