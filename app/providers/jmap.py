@@ -87,8 +87,104 @@ class JMAPProvider:
     async def scan_headers(  # type: ignore[override]
         self, since: datetime | None, max_messages: int
     ) -> AsyncIterator[ScannedMessage]:
-        raise NotImplementedError
-        yield  # pragma: no cover
+        async with aiohttp.ClientSession() as http:
+            if self._api_url is None:
+                await self._get_session(http)
+
+            payload = {
+                "using": _CAPS,
+                "methodCalls": [
+                    [
+                        "Mailbox/query",
+                        {"accountId": self._account_id, "filter": {"role": "inbox"}},
+                        "0",
+                    ],
+                    [
+                        "Email/query",
+                        {
+                            "accountId": self._account_id,
+                            "filter": {
+                                "inMailbox": {
+                                    "resultOf": "0",
+                                    "name": "Mailbox/query",
+                                    "path": "/ids/0",
+                                }
+                            },
+                            "sort": [
+                                {"property": "receivedAt", "isAscending": False}
+                            ],
+                            "limit": max_messages,
+                        },
+                        "1",
+                    ],
+                    [
+                        "Email/get",
+                        {
+                            "accountId": self._account_id,
+                            "#ids": {
+                                "resultOf": "1",
+                                "name": "Email/query",
+                                "path": "/ids",
+                            },
+                            "properties": [
+                                "id",
+                                "mailboxIds",
+                                "from",
+                                "subject",
+                                "receivedAt",
+                                "header:List-Id:asText",
+                                "header:List-Unsubscribe:asText",
+                                "header:List-Unsubscribe-Post:asText",
+                            ],
+                        },
+                        "2",
+                    ],
+                ],
+            }
+            async with http.post(
+                self._api_url, json=payload, headers=self._headers
+            ) as r:
+                r.raise_for_status()
+                data = await r.json()
+
+        emails = data["methodResponses"][-1][1].get("list", [])
+        for em in emails:
+            unsub = em.get("header:List-Unsubscribe:asText")
+            if not unsub:
+                continue
+            from_list = em.get("from") or []
+            if not from_list:
+                continue
+            from_email = (from_list[0].get("email") or "").strip().lower()
+            if not from_email or "@" not in from_email:
+                continue
+            domain = from_email.rsplit("@", 1)[1]
+
+            received_raw = em.get("receivedAt") or ""
+            try:
+                received = datetime.fromisoformat(
+                    received_raw.replace("Z", "+00:00")
+                ).astimezone(timezone.utc)
+            except ValueError:
+                continue
+
+            mailbox_ids = list((em.get("mailboxIds") or {}).keys())
+            mailbox = mailbox_ids[0] if mailbox_ids else ""
+
+            if since is not None and received < since:
+                continue
+
+            yield ScannedMessage(
+                ref=MessageRef(provider_uid=em["id"], mailbox=mailbox),
+                from_email=from_email,
+                from_domain=domain,
+                display_name=(from_list[0].get("name") or "").strip(),
+                subject=em.get("subject") or "",
+                received_at=received,
+                list_id=em.get("header:List-Id:asText"),
+                list_unsubscribe=unsub,
+                list_unsubscribe_post=em.get("header:List-Unsubscribe-Post:asText"),
+            )
 
     async def fetch_snippet(self, ref: MessageRef) -> str:
         raise NotImplementedError
