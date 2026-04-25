@@ -1,5 +1,11 @@
 # Bulk Unsubscribe
 
+> **Personal-use, AI-generated project.** The code, tests, and docs in this
+> repo were drafted by an LLM (Claude Code) and reviewed by a single developer.
+> It has not been hardened or audited for multi-user or production deployments
+> — treat it as a hobby tool you self-host for your own inbox, on localhost or
+> behind a reverse proxy you control.
+
 Mobile-first, self-hosted webapp that connects to your mail provider, scans for newsletters, and helps you bulk-unsubscribe and clean up your inbox.
 
 ## Features

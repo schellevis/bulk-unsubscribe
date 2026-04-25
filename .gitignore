@@ -36,5 +36,7 @@ node_modules/
 
 # Internal planning/spec docs (not for the public repo)
 docs/superpowers/
-CLAUDE.md
 .claude/
+
+# Local Playwright/MCP screenshot output
+.playwright-mcp/
