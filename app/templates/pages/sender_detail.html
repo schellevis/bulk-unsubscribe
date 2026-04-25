@@ -16,6 +16,9 @@
 </div>
 
 <div class="flex" style="margin: 0.5rem 0; flex-wrap: wrap;">
+  <button hx-get="/senders/{{ sender.id }}/unsubscribe"
+          hx-target="#unsub-status-{{ sender.id }}"
+          hx-swap="innerHTML">Unsubscribe…</button>
   <button class="secondary"
           hx-get="/senders/{{ sender.id }}/bulk?destination=archive"
           hx-target="#bulk-status-{{ sender.id }}"
@@ -25,6 +28,7 @@
           hx-target="#bulk-status-{{ sender.id }}"
           hx-swap="innerHTML">Move all to Trash</button>
 </div>
+<div id="unsub-status-{{ sender.id }}"></div>
 <div id="bulk-status-{{ sender.id }}"></div>
 
 <h3>Recent messages ({{ messages|length }})</h3>

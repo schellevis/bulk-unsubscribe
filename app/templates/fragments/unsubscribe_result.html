@@ -1,0 +1,10 @@
+<div class="card" style="border-color: {{ 'var(--accent)' if success else 'var(--danger)' }};">
+  <strong>{{ "✓ Unsubscribed" if success else "✗ Failed" }}</strong>
+  <div class="muted">{{ detail }}</div>
+  {% if method == "http" and sender.unsubscribe_http %}
+  <a class="btn" href="{{ sender.unsubscribe_http }}" target="_blank" rel="noopener noreferrer">Open the page</a>
+  {% endif %}
+  {% if method == "mailto" and sender.unsubscribe_mailto %}
+  <a class="btn" href="{{ sender.unsubscribe_mailto }}">Open mail client</a>
+  {% endif %}
+</div>
