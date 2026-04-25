@@ -33,3 +33,8 @@ venv.bak/
 *.sqlite3
 .DS_Store
 node_modules/
+
+# Internal planning/spec docs (not for the public repo)
+docs/superpowers/
+CLAUDE.md
+.claude/
