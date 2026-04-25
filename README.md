@@ -100,4 +100,3 @@ uv run pytest -v
 - SQLAlchemy 2.x + Alembic + SQLite.
 - `MailProvider` Protocol with IMAP (`imaplib` wrapped in `asyncio.to_thread`) and JMAP (`aiohttp`) implementations.
 - In-process async job runner with crash recovery — no external worker required.
-- See `docs/superpowers/specs/2026-04-25-bulk-unsubscribe-rewrite-design.md` for the full design.
